@@ -281,3 +281,6 @@ hw*_report.pdf
 
 #macOS
 .DS_Store
+
+
+results/smoke_cpu/

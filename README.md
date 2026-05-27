@@ -143,6 +143,22 @@ python run_all.py --exp exp3 --modalities tabular cv nlp timeseries graph
 
 这些产物足够支持后续 ROC/PR 曲线、污染退化曲线、跨模态排名、错误分析和显著性检验；只有换算法、换数据划分或换超参数时才需要重跑。
 
+### 服务器冒烟测试
+
+已跑完轻量冒烟测试确认数据加载、三组实验日志、artifact 和可视化链路可用：
+
+```bash
+python -m scripts.smoke_test_experiments \
+  --data-root /root/autodl-tmp/final_project/data \
+  --output-dir results/smoke_cpu \
+  --modalities tabular timeseries graph \
+  --max-train 160 \
+  --max-test 120 \
+  --run-analysis
+```
+
+该脚本只抽小样本并运行 IQR + Logistic Regression，不代表最终性能；通过后再跑全量实验。
+
 ## 生成评估图表
 
 实验完成后直接从结果文件生成所有图表和表格：
