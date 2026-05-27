@@ -26,6 +26,7 @@ from typing import Any
 import numpy as np
 
 from models.base import GraphDetector
+from models.device import get_preferred_device
 
 
 def _fix_torch_seed(seed: int | None) -> None:
@@ -42,13 +43,9 @@ def _fix_torch_seed(seed: int | None) -> None:
 
 
 def _select_device(prefer_cuda: bool = True) -> str:
-    try:
-        import torch
-        if prefer_cuda and torch.cuda.is_available():
-            return "cuda"
-    except ImportError:
-        pass
-    return "cpu"
+    if not prefer_cuda:
+        return "cpu"
+    return get_preferred_device()
 
 
 def _pyg_to_normalized_adj(graph, device: str):

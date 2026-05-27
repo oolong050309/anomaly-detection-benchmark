@@ -24,6 +24,7 @@ from typing import Any
 import numpy as np
 
 from models.base import TimeSeriesDetector
+from models.device import get_preferred_device
 
 
 _DADA_DIR = Path(__file__).resolve().parent / "_vendor" / "dada"
@@ -114,7 +115,7 @@ class DADADetector(TimeSeriesDetector):
             ) from e
 
         _fix_torch_seed(self.random_state)
-        device = self.device if self.device != "auto" else _select_device()
+        device = self.device if self.device != "auto" else get_preferred_device()
         self._device = device
 
         try:

@@ -14,6 +14,8 @@ import sys
 import time
 from pathlib import Path
 
+from models.device import cuda_available, get_preferred_device
+
 
 ROOT = Path(__file__).resolve().parent
 EXPERIMENT_MODULES = {
@@ -49,6 +51,12 @@ def main() -> None:
     selected = ["exp1", "exp2", "exp3"] if args.exp == "all" else [args.exp]
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(
+        f"Device preference: {get_preferred_device()} "
+        f"(CUDA available: {cuda_available()})",
+        flush=True,
+    )
 
     t0 = time.perf_counter()
     for exp in selected:

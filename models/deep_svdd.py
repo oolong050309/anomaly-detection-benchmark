@@ -12,6 +12,7 @@ import numpy as np
 
 from models.autoencoder import _set_torch_seed
 from models.base import BaseDetector
+from models.device import cuda_device_index, get_preferred_device, maybe_add_supported_kwargs
 
 
 class DeepSVDDDetector(BaseDetector):
@@ -50,13 +51,23 @@ class DeepSVDDDetector(BaseDetector):
         n_features = X.shape[1]
 
         try:
+            device = get_preferred_device()
+            model_kwargs = maybe_add_supported_kwargs(
+                DeepSVDD,
+                self._algo_kwargs,
+                {
+                    "device": device,
+                    "use_cuda": device.startswith("cuda"),
+                    "gpu": cuda_device_index(),
+                },
+            )
             self._model = DeepSVDD(
                 n_features=n_features,
                 epochs=self.epochs,
                 batch_size=self.batch_size,
                 contamination=self.contamination,
                 random_state=self.random_state,
-                **self._algo_kwargs,
+                **model_kwargs,
             )
             self._model.fit(X)
         except Exception as e:

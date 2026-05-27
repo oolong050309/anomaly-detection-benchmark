@@ -23,6 +23,7 @@ from typing import Any
 import numpy as np
 
 from models.base import SupervisedDetector
+from models.device import get_preferred_device, maybe_add_supported_kwargs
 
 
 # ---------------------------------------------------------------------------
@@ -205,6 +206,15 @@ class XGBoostDetector(SupervisedDetector):
 
         spw = _scale_pos_weight(y)
         try:
+            model_kwargs = dict(self._algo_kwargs)
+            if get_preferred_device().startswith("cuda"):
+                # XGBoost >= 2.0 uses device='cuda' with tree_method='hist'.
+                # Older releases ignore 'device' poorly, so fallback below
+                # retries with the legacy gpu_hist setting if needed.
+                model_kwargs.setdefault("device", "cuda")
+                model_kwargs.setdefault("tree_method", "hist")
+            else:
+                model_kwargs.setdefault("tree_method", "hist")
             self._model = XGBClassifier(
                 n_estimators=self.n_estimators,
                 max_depth=self.max_depth,
@@ -212,11 +222,28 @@ class XGBoostDetector(SupervisedDetector):
                 scale_pos_weight=spw,
                 random_state=self.random_state,
                 eval_metric="logloss",
-                tree_method="hist",
                 n_jobs=-1,
-                **self._algo_kwargs,
+                **model_kwargs,
             )
-            self._model.fit(X, y)
+            try:
+                self._model.fit(X, y)
+            except Exception:
+                if get_preferred_device().startswith("cuda"):
+                    legacy_kwargs = dict(self._algo_kwargs)
+                    legacy_kwargs.setdefault("tree_method", "gpu_hist")
+                    self._model = XGBClassifier(
+                        n_estimators=self.n_estimators,
+                        max_depth=self.max_depth,
+                        learning_rate=self.learning_rate,
+                        scale_pos_weight=spw,
+                        random_state=self.random_state,
+                        eval_metric="logloss",
+                        n_jobs=-1,
+                        **legacy_kwargs,
+                    )
+                    self._model.fit(X, y)
+                else:
+                    raise
         except Exception as e:
             raise RuntimeError(
                 f"[{type(self).__name__}] 训练失败: {e}"
@@ -318,16 +345,21 @@ class TabPFNDetector(SupervisedDetector):
             # TabPFN v2 在 CPU 上默认禁止 n>1000 样本；通过环境变量或参数显式允许
             import os
             os.environ.setdefault("TABPFN_ALLOW_CPU_LARGE_DATASET", "1")
+            model_kwargs = maybe_add_supported_kwargs(
+                TabPFNClassifier,
+                self._algo_kwargs,
+                {"device": get_preferred_device()},
+            )
             try:
                 self._model = TabPFNClassifier(
                     random_state=self.random_state,
                     ignore_pretraining_limits=True,
-                    **self._algo_kwargs,
+                    **model_kwargs,
                 )
             except TypeError:
                 # 旧版 TabPFN 不支持 ignore_pretraining_limits 参数
                 self._model = TabPFNClassifier(
-                    random_state=self.random_state, **self._algo_kwargs
+                    random_state=self.random_state, **model_kwargs
                 )
             self._model.fit(X, y)
         except Exception as e:

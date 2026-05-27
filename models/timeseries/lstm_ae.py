@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from models.base import TimeSeriesDetector
+from models.device import get_preferred_device
 
 
 class _LSTMAE:
@@ -110,7 +111,7 @@ class LSTMAutoEncoderDetector(TimeSeriesDetector):
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(int(self.random_state))
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = get_preferred_device()
         self._device = device
 
         X3 = self._to_3d(X)

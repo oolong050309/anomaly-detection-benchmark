@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from models.base import SupervisedDetector, TimeSeriesDetector
+from models.device import get_preferred_device
 
 
 class _LSTMClassifier:
@@ -99,7 +100,7 @@ class LSTMSupervisedDetector(TimeSeriesDetector, SupervisedDetector):
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(int(self.random_state))
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = get_preferred_device()
         self._device = device
 
         X3 = self._to_3d(X)

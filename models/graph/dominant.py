@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 
 from models.base import GraphDetector
+from models.device import cuda_available, cuda_device_index, get_preferred_device, maybe_add_supported_kwargs
 
 
 class DOMINANTDetector(GraphDetector):
@@ -60,12 +61,20 @@ class DOMINANTDetector(GraphDetector):
             np.random.seed(int(self.random_state))
 
         try:
+            model_kwargs = maybe_add_supported_kwargs(
+                DOMINANT,
+                self._algo_kwargs,
+                {
+                    "gpu": cuda_device_index() if cuda_available() else -1,
+                    "device": get_preferred_device(),
+                },
+            )
             self._model = DOMINANT(
                 hid_dim=self.hid_dim,
                 num_layers=self.num_layers,
                 epoch=self.epoch,
                 contamination=self.contamination,
-                **self._algo_kwargs,
+                **model_kwargs,
             )
             self._model.fit(graph)
         except Exception as e:

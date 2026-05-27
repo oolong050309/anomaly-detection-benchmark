@@ -193,4 +193,5 @@ python analyze_results.py \
 - 原始数据、压缩包、模型权重禁止提交
 - 所有随机过程默认使用 `seed=42`
 - 标准化只使用训练集统计量，避免测试集信息泄漏
+- 深度/图模型默认 `AD_DEVICE=auto`，检测到 CUDA 时优先使用 GPU；可用 `AD_DEVICE=cpu` 强制 CPU，或用 `AD_CUDA_DEVICE=0` 指定 GPU 编号。
 - GADBench 中 `amazon` 使用预设 mask；`tfinance`、`reddit`、`weibo` 使用固定种子生成分层节点 mask

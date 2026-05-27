@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from models.base import BaseDetector
+from models.device import get_preferred_device, maybe_add_supported_kwargs
 
 
 def _set_torch_seed(seed: int | None) -> None:
@@ -66,12 +67,20 @@ class AutoEncoderDetector(BaseDetector):
         from pyod.models.auto_encoder import AutoEncoder
 
         try:
+            model_kwargs = maybe_add_supported_kwargs(
+                AutoEncoder,
+                self._algo_kwargs,
+                {
+                    "device": get_preferred_device(),
+                    "random_state": self.random_state,
+                },
+            )
             self._model = AutoEncoder(
                 hidden_neuron_list=self.hidden_neuron_list,
                 epoch_num=self.epoch_num,
                 batch_size=self.batch_size,
                 contamination=self.contamination,
-                **self._algo_kwargs,
+                **model_kwargs,
             )
             self._model.fit(X)
         except Exception as e:
