@@ -143,6 +143,24 @@ python run_all.py --exp exp3 --modalities tabular cv nlp timeseries graph
 
 这些产物足够支持后续 ROC/PR 曲线、污染退化曲线、跨模态排名、错误分析和显著性检验；只有换算法、换数据划分或换超参数时才需要重跑。
 
+## 生成评估图表
+
+实验完成后直接从结果文件生成所有图表和表格：
+
+```bash
+python analyze_results.py \
+  --results-dir results/server_run_seed42 \
+  --figures-dir figures \
+  --metric auc_roc
+```
+
+输出结构：
+
+- `figures/exp1/`：算法×数据集热力图、平均排名、ROC 叠加图、性能-效率权衡图、Friedman/Nemenyi 统计检验表和 CD 图。
+- `figures/exp2/`：污染率退化曲线、鲁棒性排名 CSV/PNG、算法×形态 AUC 下降热力图。
+- `figures/exp3/`：算法×形态热力图、雷达图、形态难度柱状图。
+- `figures/error_analysis/`：分数分布直方图、代表性 FP/FN 案例表。
+
 ## 服务器数据位置
 
 原始数据不提交到 git，统一放在服务器：
