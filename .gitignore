@@ -150,6 +150,22 @@ activemq-data/
 # Environments
 .env
 .envrc
+
+# Project data / model artifacts
+data/raw/
+data/tabular/
+data/cv/
+data/nlp/
+data/graph/
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.pkl
 .venv
 env/
 venv/
@@ -251,6 +267,12 @@ install.log
 
 # Kiro IDE workspace (spec docs, internal config) - 私有工作目录，不上传
 .kiro/
+
+# Editor configs
+.vscode/
+
+# Agent / AI scratch
+AGENT.md
 
 # Slides / final PDF (看团队约定，默认不上传)
 demo/*.pdf

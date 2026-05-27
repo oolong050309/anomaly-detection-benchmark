@@ -1,0 +1,709 @@
+[
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/6_cardio.npz",
+    "file": "6_cardio.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        21
+      ],
+      "scale_shape": [
+        21
+      ]
+    },
+    "n_samples": 1831,
+    "n_features": 21,
+    "shape": [
+      1831,
+      21
+    ],
+    "dtype": "float64",
+    "value_min": -4.567897329062897,
+    "value_max": 19.90038690536899,
+    "value_mean": 5.839419117843272e-17,
+    "value_std": 0.9997268878823821,
+    "n_anomalies": 176,
+    "anomaly_rate": 0.0961223375204806,
+    "name": "cardio",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/38_thyroid.npz",
+    "file": "38_thyroid.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        6
+      ],
+      "scale_shape": [
+        6
+      ]
+    },
+    "n_samples": 3772,
+    "n_features": 6,
+    "shape": [
+      3772,
+      6
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 1.0,
+    "value_mean": 0.2569173747590596,
+    "value_std": 0.19776328702368795,
+    "n_anomalies": 93,
+    "anomaly_rate": 0.024655355249204668,
+    "name": "thyroid",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/30_satellite.npz",
+    "file": "30_satellite.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        36
+      ],
+      "scale_shape": [
+        36
+      ]
+    },
+    "n_samples": 6435,
+    "n_features": 36,
+    "shape": [
+      6435,
+      36
+    ],
+    "dtype": "float64",
+    "value_min": 27.0,
+    "value_max": 157.0,
+    "value_mean": 83.4718380385047,
+    "value_std": 21.197722515201743,
+    "n_anomalies": 2036,
+    "anomaly_rate": 0.3163947163947164,
+    "name": "satellite",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/32_shuttle.npz",
+    "file": "32_shuttle.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        9
+      ],
+      "scale_shape": [
+        9
+      ]
+    },
+    "n_samples": 49097,
+    "n_features": 9,
+    "shape": [
+      49097,
+      9
+    ],
+    "dtype": "float64",
+    "value_min": -26739.0,
+    "value_max": 15164.0,
+    "value_mean": 29.77642897393595,
+    "value_std": 84.84450395531893,
+    "n_anomalies": 3511,
+    "anomaly_rate": 0.0715114976475141,
+    "name": "shuttle",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/13_fraud.npz",
+    "file": "13_fraud.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "skipped"
+    },
+    "n_samples": 284807,
+    "n_features": 29,
+    "shape": [
+      284807,
+      29
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 1.0,
+    "value_mean": 0.5213456994113257,
+    "value_std": 0.2142692225546457,
+    "n_anomalies": 492,
+    "anomaly_rate": 0.001727485630620034,
+    "name": "credit_card",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/29_Pima.npz",
+    "file": "29_Pima.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        8
+      ],
+      "scale_shape": [
+        8
+      ]
+    },
+    "n_samples": 768,
+    "n_features": 8,
+    "shape": [
+      768,
+      8
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 846.0,
+    "value_mean": 44.98579117838542,
+    "value_std": 58.372971319254624,
+    "n_anomalies": 268,
+    "anomaly_rate": 0.3489583333333333,
+    "name": "pima",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/2_annthyroid.npz",
+    "file": "2_annthyroid.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        6
+      ],
+      "scale_shape": [
+        6
+      ]
+    },
+    "n_samples": 7200,
+    "n_features": 6,
+    "shape": [
+      7200,
+      6
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 0.97,
+    "value_mean": 0.1443065111111111,
+    "value_std": 0.19154795592282345,
+    "n_anomalies": 534,
+    "anomaly_rate": 0.07416666666666667,
+    "name": "annthyroid",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/23_mammography.npz",
+    "file": "23_mammography.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        6
+      ],
+      "scale_shape": [
+        6
+      ]
+    },
+    "n_samples": 11183,
+    "n_features": 6,
+    "shape": [
+      11183,
+      6
+    ],
+    "dtype": "float64",
+    "value_min": -0.94572324,
+    "value_max": 31.508443,
+    "value_mean": -1.9973827328787797e-11,
+    "value_std": 0.9999552890128648,
+    "n_anomalies": 260,
+    "anomaly_rate": 0.023249575248144506,
+    "name": "mammography",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/Classical/28_pendigits.npz",
+    "file": "28_pendigits.npz",
+    "group": "Classical",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        16
+      ],
+      "scale_shape": [
+        16
+      ]
+    },
+    "n_samples": 6870,
+    "n_features": 16,
+    "shape": [
+      6870,
+      16
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 1.0,
+    "value_mean": 0.508287603003767,
+    "value_std": 0.34428530576026345,
+    "n_anomalies": 156,
+    "anomaly_rate": 0.022707423580786028,
+    "name": "pendigits",
+    "modality": "tabular"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/CV_by_ResNet18/CIFAR10_0.npz",
+    "file": "CIFAR10_0.npz",
+    "group": "CV_by_ResNet18",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        512
+      ],
+      "scale_shape": [
+        512
+      ]
+    },
+    "n_samples": 5263,
+    "n_features": 512,
+    "shape": [
+      5263,
+      512
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 10.4219970703125,
+    "value_mean": 0.26102959135481857,
+    "value_std": 0.5832118985055282,
+    "n_anomalies": 263,
+    "anomaly_rate": 0.04997149914497435,
+    "name": "cifar10_0",
+    "modality": "cv"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/CV_by_ResNet18/CIFAR10_1.npz",
+    "file": "CIFAR10_1.npz",
+    "group": "CV_by_ResNet18",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        512
+      ],
+      "scale_shape": [
+        512
+      ]
+    },
+    "n_samples": 5263,
+    "n_features": 512,
+    "shape": [
+      5263,
+      512
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 9.983469009399414,
+    "value_mean": 0.3011438447510423,
+    "value_std": 0.6104989011087714,
+    "n_anomalies": 263,
+    "anomaly_rate": 0.04997149914497435,
+    "name": "cifar10_1",
+    "modality": "cv"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/CV_by_ResNet18/FashionMNIST_0.npz",
+    "file": "FashionMNIST_0.npz",
+    "group": "CV_by_ResNet18",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        512
+      ],
+      "scale_shape": [
+        512
+      ]
+    },
+    "n_samples": 6315,
+    "n_features": 512,
+    "shape": [
+      6315,
+      512
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 9.373923301696777,
+    "value_mean": 0.2926719810491169,
+    "value_std": 0.5921814961808355,
+    "n_anomalies": 315,
+    "anomaly_rate": 0.0498812351543943,
+    "name": "fashionmnist_0",
+    "modality": "cv"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/CV_by_ResNet18/FashionMNIST_1.npz",
+    "file": "FashionMNIST_1.npz",
+    "group": "CV_by_ResNet18",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        512
+      ],
+      "scale_shape": [
+        512
+      ]
+    },
+    "n_samples": 6315,
+    "n_features": 512,
+    "shape": [
+      6315,
+      512
+    ],
+    "dtype": "float64",
+    "value_min": 0.0,
+    "value_max": 8.955636978149414,
+    "value_mean": 0.29561052963749257,
+    "value_std": 0.6007002475273978,
+    "n_anomalies": 315,
+    "anomaly_rate": 0.0498812351543943,
+    "name": "fashionmnist_1",
+    "modality": "cv"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/NLP_by_BERT/20news_0.npz",
+    "file": "20news_0.npz",
+    "group": "NLP_by_BERT",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        768
+      ],
+      "scale_shape": [
+        768
+      ]
+    },
+    "n_samples": 3090,
+    "n_features": 768,
+    "shape": [
+      3090,
+      768
+    ],
+    "dtype": "float64",
+    "value_min": -1.0,
+    "value_max": 1.0,
+    "value_mean": -0.013292314204372059,
+    "value_std": 0.6429468659883318,
+    "n_anomalies": 154,
+    "anomaly_rate": 0.04983818770226537,
+    "name": "20news_0",
+    "modality": "nlp"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/NLP_by_BERT/20news_1.npz",
+    "file": "20news_1.npz",
+    "group": "NLP_by_BERT",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        768
+      ],
+      "scale_shape": [
+        768
+      ]
+    },
+    "n_samples": 2514,
+    "n_features": 768,
+    "shape": [
+      2514,
+      768
+    ],
+    "dtype": "float64",
+    "value_min": -1.0,
+    "value_max": 1.0,
+    "value_mean": -0.013892936494532049,
+    "value_std": 0.6365752094534806,
+    "n_anomalies": 125,
+    "anomaly_rate": 0.049721559268098646,
+    "name": "20news_1",
+    "modality": "nlp"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/NLP_by_BERT/agnews_0.npz",
+    "file": "agnews_0.npz",
+    "group": "NLP_by_BERT",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        768
+      ],
+      "scale_shape": [
+        768
+      ]
+    },
+    "n_samples": 10000,
+    "n_features": 768,
+    "shape": [
+      10000,
+      768
+    ],
+    "dtype": "float64",
+    "value_min": -1.0,
+    "value_max": 1.0,
+    "value_mean": -0.01266739595371274,
+    "value_std": 0.6331243597583991,
+    "n_anomalies": 500,
+    "anomaly_rate": 0.05,
+    "name": "agnews_0",
+    "modality": "nlp"
+  },
+  {
+    "status": "ok",
+    "source": "ADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/ADBench/NLP_by_BERT/amazon.npz",
+    "file": "amazon.npz",
+    "group": "NLP_by_BERT",
+    "split": "stratified_train_test_split",
+    "test_size": 0.3,
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "zscore_train_only",
+      "mean_shape": [
+        768
+      ],
+      "scale_shape": [
+        768
+      ]
+    },
+    "n_samples": 10000,
+    "n_features": 768,
+    "shape": [
+      10000,
+      768
+    ],
+    "dtype": "float64",
+    "value_min": -1.0,
+    "value_max": 1.0,
+    "value_mean": -0.015288922250278392,
+    "value_std": 0.6463048957377908,
+    "n_anomalies": 500,
+    "anomaly_rate": 0.05,
+    "name": "amazon",
+    "modality": "nlp"
+  },
+  {
+    "status": "selected",
+    "name": "001_NAB_id_1_Facility_tr_1007_1st_2014",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/001_NAB_id_1_Facility_tr_1007_1st_2014.csv"
+  },
+  {
+    "status": "selected",
+    "name": "004_NAB_id_4_Facility_tr_1007_1st_1437",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/004_NAB_id_4_Facility_tr_1007_1st_1437.csv"
+  },
+  {
+    "status": "selected",
+    "name": "170_MITDB_id_1_Medical_tr_17675_1st_17775",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/170_MITDB_id_1_Medical_tr_17675_1st_17775.csv"
+  },
+  {
+    "status": "selected",
+    "name": "171_MITDB_id_2_Medical_tr_50000_1st_88864",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/171_MITDB_id_2_Medical_tr_50000_1st_88864.csv"
+  },
+  {
+    "status": "selected",
+    "name": "140_MSL_id_1_Sensor_tr_530_1st_630",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/140_MSL_id_1_Sensor_tr_530_1st_630.csv"
+  },
+  {
+    "status": "selected",
+    "name": "141_MSL_id_2_Sensor_tr_500_1st_550",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/141_MSL_id_2_Sensor_tr_500_1st_550.csv"
+  },
+  {
+    "status": "selected",
+    "name": "002_NAB_id_2_WebService_tr_1500_1st_4106",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/002_NAB_id_2_WebService_tr_1500_1st_4106.csv"
+  },
+  {
+    "status": "selected",
+    "name": "003_NAB_id_3_WebService_tr_1362_1st_1462",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "path": "/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/003_NAB_id_3_WebService_tr_1362_1st_1462.csv"
+  },
+  {
+    "status": "available",
+    "name": "TSB-AD-U",
+    "source": "TSB-AD-U",
+    "modality": "timeseries",
+    "n_files": 870
+  },
+  {
+    "status": "ok",
+    "source": "GADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/GADBench/tfinance",
+    "feature_key": "feature",
+    "label_key": "label",
+    "n_nodes": 39357,
+    "n_features": 10,
+    "n_anomalies": 1803,
+    "anomaly_rate": 0.04581141855324339,
+    "split": "generated_stratified_node_masks",
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "skipped"
+    },
+    "name": "tfinance",
+    "modality": "graph"
+  },
+  {
+    "status": "ok",
+    "source": "GADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/GADBench/reddit",
+    "feature_key": "feature",
+    "label_key": "label",
+    "n_nodes": 10984,
+    "n_features": 64,
+    "n_anomalies": 366,
+    "anomaly_rate": 0.03332119446467589,
+    "split": "generated_stratified_node_masks",
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "skipped"
+    },
+    "name": "reddit",
+    "modality": "graph"
+  },
+  {
+    "status": "ok",
+    "source": "GADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/GADBench/amazon",
+    "feature_key": "feature",
+    "label_key": "label",
+    "n_nodes": 11944,
+    "n_features": 25,
+    "n_anomalies": 821,
+    "anomaly_rate": 0.06873744139316812,
+    "split": "predefined_masks",
+    "seed": null,
+    "preprocessing": {
+      "standardization": "skipped"
+    },
+    "name": "amazon",
+    "modality": "graph"
+  },
+  {
+    "status": "ok",
+    "source": "GADBench",
+    "path": "/root/autodl-tmp/final_project/data/raw/GADBench/weibo",
+    "feature_key": "feature",
+    "label_key": "label",
+    "n_nodes": 8405,
+    "n_features": 400,
+    "n_anomalies": 868,
+    "anomaly_rate": 0.10327186198691256,
+    "split": "generated_stratified_node_masks",
+    "seed": 42,
+    "preprocessing": {
+      "standardization": "skipped"
+    },
+    "name": "weibo",
+    "modality": "graph"
+  }
+]

@@ -1,0 +1,8 @@
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/001_NAB_id_1_Facility_tr_1007_1st_2014.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/004_NAB_id_4_Facility_tr_1007_1st_1437.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/170_MITDB_id_1_Medical_tr_17675_1st_17775.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/171_MITDB_id_2_Medical_tr_50000_1st_88864.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/140_MSL_id_1_Sensor_tr_530_1st_630.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/141_MSL_id_2_Sensor_tr_500_1st_550.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/002_NAB_id_2_WebService_tr_1500_1st_4106.csv
+/root/autodl-tmp/final_project/data/raw/TSB-AD-U/TSB-AD-U/003_NAB_id_3_WebService_tr_1362_1st_1462.csv
