@@ -216,3 +216,43 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---------------------------------------------------------------------------
+# Project-specific ignores
+# ---------------------------------------------------------------------------
+
+# Datasets (重新跑 scripts/select_datasets.py 即可生成)
+data/tabular/*.npz
+data/cv/*.npz
+data/nlp/*.npz
+data/timeseries/*.csv
+data/graph/*
+!data/graph/.gitkeep
+!data/**/.gitkeep
+!data/selected_files.json
+!data/contaminate.py
+!data/__init__.py
+
+# Generated experiment outputs
+results/*.csv
+results/*.json
+!results/.gitkeep
+
+# Generated figures
+figures/exp1/*
+figures/exp2/*
+figures/exp3/*
+figures/error_analysis/*
+!figures/**/.gitkeep
+
+# Local install logs
+install.log
+*.log
+
+# Kiro IDE workspace (spec docs, internal config) - 私有工作目录，不上传
+.kiro/
+
+# Slides / final PDF (看团队约定，默认不上传)
+demo/*.pdf
+demo/*.pptx
+hw*_report.pdf

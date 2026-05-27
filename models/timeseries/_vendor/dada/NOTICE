@@ -1,0 +1,15 @@
+Source: https://github.com/iambowen/DADA
+
+Citation:
+@inproceedings{shentu2025towards,
+  title     = {Towards a General Time Series Anomaly Detector with Adaptive Bottlenecks and Dual Adversarial Decoders},
+  author    = {Shentu, Qichao and Li, Beibu and Zhao, Kai and Shu, Yang and Rao, Zhongwen and Pan, Lujia and Yang, Bin and Guo, Chenjuan},
+  booktitle = {ICLR},
+  year      = {2025}
+}
+
+The original repository does not include an explicit LICENSE file.
+Code is vendored solely for academic reproducibility within this course project
+(Tongji University Data Mining 2026 Final Project, Group 9).
+The pre-trained weights (pytorch_model.bin) are also redistributed under the same
+academic-use assumption stated in the repository README.

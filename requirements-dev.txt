@@ -1,0 +1,11 @@
+# Anomaly Detection Baselines - dev / test dependencies
+# Install everything via:
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+-r requirements.txt
+
+# ---- Unit tests ----
+pytest>=7.0,<9.0
+
+# ---- Property-based testing ----
+hypothesis>=6.0,<7.0

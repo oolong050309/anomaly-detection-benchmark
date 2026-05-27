@@ -1,0 +1,68 @@
+# 上传到服务器跑实验时，需要排除的文件 / 目录
+# 用法: rsync -avz --exclude-from=scripts/rsync-exclude.txt ./ user@server:/path/
+
+# git 元数据
+.git/
+.gitignore
+.gitattributes
+
+# Python 虚拟环境与缓存
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.py[codz]
+
+# 测试 / 类型检查 / Lint 缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+
+# Kiro IDE 内部状态（spec 文档可保留，仅排除运行时配置）
+.kiro/specs/*/.config.kiro
+.kiro/cache/
+.kiro/logs/
+
+# 编辑器 / IDE 配置
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# 本地日志与临时文件
+install.log
+*.log
+tempCodeRunnerFile.py
+
+# 已生成的实验产物（服务器跑出来后自己会有，避免覆盖）
+results/*.csv
+results/*.json
+figures/exp1/*
+figures/exp2/*
+figures/exp3/*
+figures/error_analysis/*
+
+# 但保留目录占位
+!results/.gitkeep
+!figures/**/.gitkeep
+
+# 不上传报告 PDF（服务器只跑代码）
+demo/*.pdf
+demo/*.pptx
+report/main.pdf
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+
+# 不上传顶层杂物（如果有）
+*.zip
+*.tar
+*.tar.gz
