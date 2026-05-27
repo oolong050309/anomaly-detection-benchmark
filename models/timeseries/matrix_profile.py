@@ -56,7 +56,12 @@ class MatrixProfileDetector(TimeSeriesDetector):
                 f"[MatrixProfileDetector] sequence length {seq.size} <= window_size {m}"
             )
         try:
-            mp = stumpy.stump(seq, m=m)
+            if self._train_seq is not None and self._train_seq.size > m:
+                # AB-join: score each test subsequence by its nearest training
+                # subsequence, so Exp-2 train contamination can affect scores.
+                mp = stumpy.stump(seq, m=m, T_B=self._train_seq)
+            else:
+                mp = stumpy.stump(seq, m=m)
         except Exception as e:
             raise RuntimeError(
                 f"[MatrixProfileDetector] 训练失败: {e}"

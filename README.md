@@ -115,6 +115,34 @@ AD_DATA_ROOT=/root/autodl-tmp/final_project/data python -m pytest tests -vv --tb
 
 详细测试说明见 `doc/test_report.md`。
 
+## 运行三组实验
+
+服务器数据准备好后，在仓库根目录运行：
+
+```bash
+python run_all.py \
+  --exp all \
+  --data-root /root/autodl-tmp/final_project/data \
+  --output-dir results/server_run_seed42 \
+  --seed 42
+```
+
+也可以单独运行：
+
+```bash
+python run_all.py --exp exp1 --modality all
+python run_all.py --exp exp2 --modalities tabular timeseries graph
+python run_all.py --exp exp3 --modalities tabular cv nlp timeseries graph
+```
+
+每组实验会写出：
+
+- `exp1_results.csv` / `exp2_results.csv` / `exp3_results.csv`：指标、耗时、模态、污染率、样本规模、参数、失败原因、artifact 路径。
+- `artifacts/<exp>/*.npz`：每次运行的 `y_true`、`scores`、必要时的 `y_train` / `test_index`。
+- `artifacts/<exp>/*.json`：run_id、参数、指标、污染元数据和补充说明。
+
+这些产物足够支持后续 ROC/PR 曲线、污染退化曲线、跨模态排名、错误分析和显著性检验；只有换算法、换数据划分或换超参数时才需要重跑。
+
 ## 服务器数据位置
 
 原始数据不提交到 git，统一放在服务器：

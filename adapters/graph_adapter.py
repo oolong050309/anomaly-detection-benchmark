@@ -65,21 +65,33 @@ def _get_node_data(graph, candidates):
     raise KeyError(f"None of node data keys exist: {candidates}. Available: {list(graph.ndata.keys())}")
 
 
-def _make_stratified_masks(y: np.ndarray, test_size: float = 0.3, seed: int = DEFAULT_SEED) -> Dict[str, np.ndarray]:
+def _make_stratified_masks(
+    y: np.ndarray,
+    test_size: float = 0.3,
+    val_size: float = 0.1,
+    seed: int = DEFAULT_SEED,
+) -> Dict[str, np.ndarray]:
     """当图文件没有预设 mask 时，生成可复现的分层节点 mask。"""
 
     rng = np.random.default_rng(seed)
     train_mask = np.zeros(len(y), dtype=bool)
+    val_mask = np.zeros(len(y), dtype=bool)
     test_mask = np.zeros(len(y), dtype=bool)
     for label in np.unique(y):
         idx = np.flatnonzero(y == label)
         rng.shuffle(idx)
         n_test = int(round(len(idx) * test_size))
+        n_val = int(round(len(idx) * val_size))
         if len(idx) > 1:
             n_test = min(max(n_test, 1), len(idx) - 1)
+        if len(idx) - n_test > 1:
+            n_val = min(max(n_val, 1), len(idx) - n_test - 1)
+        else:
+            n_val = 0
         test_mask[idx[:n_test]] = True
-        train_mask[idx[n_test:]] = True
-    return {"train_mask": train_mask, "test_mask": test_mask}
+        val_mask[idx[n_test:n_test + n_val]] = True
+        train_mask[idx[n_test + n_val:]] = True
+    return {"train_mask": train_mask, "val_mask": val_mask, "test_mask": test_mask}
 
 
 def resolve_graph_file(name: str, data_root: Optional[str | Path] = None) -> Path:
@@ -170,8 +182,28 @@ def load_gadbench_dataset(
         X_scaled = X.copy()
         X_scaled[masks["train_mask"]] = X_train
         X_scaled[masks["test_mask"]] = X_test
+        if "val_mask" in masks and np.any(masks["val_mask"]):
+            mean = np.mean(X[masks["train_mask"]], axis=0)
+            scale = np.std(X[masks["train_mask"]], axis=0)
+            scale = np.where(scale < 1e-12, 1.0, scale)
+            X_scaled[masks["val_mask"]] = (X[masks["val_mask"]] - mean) / scale
     else:
         X_scaled = X
+
+    # Keep the raw graph object consistent with the matrix view so graph models
+    # use the same train-only standardization and generated masks.
+    try:
+        import torch
+
+        feat_dtype = feat.dtype if isinstance(getattr(feat, "dtype", None), torch.dtype) else torch.float32
+        feat_device = getattr(feat, "device", None)
+        graph.ndata[feat_key] = torch.as_tensor(X_scaled, dtype=feat_dtype, device=feat_device)
+        if feat_key != "feature":
+            graph.ndata["feature"] = graph.ndata[feat_key]
+        for mask_name, mask in masks.items():
+            graph.ndata[mask_name] = torch.as_tensor(mask, dtype=torch.bool, device=feat_device)
+    except Exception:
+        pass
 
     metadata = {
         "source": "GADBench",

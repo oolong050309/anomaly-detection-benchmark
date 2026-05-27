@@ -278,3 +278,6 @@ AGENT.md
 demo/*.pdf
 demo/*.pptx
 hw*_report.pdf
+
+#macOS
+.DS_Store
