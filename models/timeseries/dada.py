@@ -69,6 +69,8 @@ class DADADetector(TimeSeriesDetector):
         每个输入做多少次随机 mask 推理求方差，用于异常分数。
     mask_mode : str, default='c'
         ``'c'`` 对称 mask、``'random'`` 随机 mask、``'nomask'`` 不 mask。
+    batch_size : int, default=32
+        长序列推理时一次 forward 的 chunk 数。OOM 时自动减半重试。
     """
 
     def __init__(
@@ -80,6 +82,7 @@ class DADADetector(TimeSeriesDetector):
         copies: int = 10,
         mask_mode: str = "c",
         device: str = "auto",
+        batch_size: int = 32,
     ) -> None:
         super().__init__(contamination=contamination, random_state=random_state)
         self.seq_len = int(seq_len)
@@ -87,6 +90,7 @@ class DADADetector(TimeSeriesDetector):
         self.copies = int(copies)
         self.mask_mode = mask_mode
         self.device = device
+        self.batch_size = int(batch_size)
         self._model: Any | None = None
         self._device: str = "cpu"
 
@@ -119,11 +123,25 @@ class DADADetector(TimeSeriesDetector):
         self._device = device
 
         try:
-            # trust_remote_code=True 会执行 vendor/dada/configuration_DADA.py
-            # 与 modeling_DADA.py 中的代码
-            self._model = AutoModel.from_pretrained(
-                str(_DADA_DIR), trust_remote_code=True
-            ).to(device)
+            # 直接用 vendored 的 DADA 类加载权重，绕开 AutoModel 与 transformers 配置注册的兼容问题
+            import json
+            import torch as _torch
+            from models.timeseries._vendor.dada import DADA, DADAConfig
+
+            config_path = _DADA_DIR / "config.json"
+            with open(config_path, "r", encoding="utf-8") as f:
+                config_dict = json.load(f)
+            # DADAConfig 期望参数为 list，剥离 transformers 自动注入的字段
+            for key in ("transformers_version", "torch_dtype", "architectures"):
+                config_dict.pop(key, None)
+            config = DADAConfig(**config_dict)
+
+            model = DADA(config)
+            state_dict = _torch.load(
+                _DADA_DIR / "pytorch_model.bin", map_location="cpu"
+            )
+            model.load_state_dict(state_dict, strict=False)
+            self._model = model.to(device)
             self._model.eval()
         except Exception as e:
             raise RuntimeError(
@@ -176,26 +194,76 @@ class DADADetector(TimeSeriesDetector):
         return np.concatenate([seq.astype(np.float32), pad])
 
     def _score_long_sequence(self, seq: np.ndarray) -> np.ndarray:
-        """对一维长序列，按 ``seq_len`` 不重叠切窗推理，再拼回点级分数。"""
+        """对一维长序列，按 ``seq_len`` 不重叠切窗推理，再拼回点级分数。
+
+        批量化版本：先把所有不重叠 chunk（最后一个 zero-pad 到 ``seq_len``）
+        ``stack`` 成 ``[n_chunks, seq_len]``，然后按 ``self.batch_size`` 分批
+        ``forward`` 一次性算分。OOM 时自动把 batch_size 减半重试，降到 1 仍 OOM
+        抛 ``RuntimeError``。
+
+        输出形状/顺序 / 数值与逐 chunk 循环版本等价（同权重、同切分、同 dtype）。
+        """
         import torch
 
-        T = seq.size
+        T = int(seq.size)
         L = self.seq_len
         scores = np.zeros(T, dtype=np.float64)
 
-        # 不重叠切窗
+        if T == 0:
+            return scores
+
+        # 1) 先把所有不重叠 chunk 收齐（与原循环切法 1:1 等价：
+        #    最后一个 chunk 长度 < L 时 zero-pad 到 L，但写回时只取前 (end-idx) 个点）。
+        starts: list[int] = []
+        chunk_list: list[np.ndarray] = []
         idx = 0
         while idx < T:
             end = min(idx + L, T)
             chunk = seq[idx:end]
             chunk_pad = self._pad_or_truncate(chunk, L)
-            pt = (
-                torch.from_numpy(chunk_pad).reshape(1, L, 1).to(self._device)
-            )
-            with torch.no_grad():
-                s = self._model.infer(pt, norm=self.norm)
-            s_np = s.detach().cpu().numpy().reshape(-1)  # (L,)
-            scores[idx:end] = s_np[: end - idx]
+            starts.append(idx)
+            chunk_list.append(chunk_pad)
             idx = end
+
+        # [n_chunks, L] float32 张量；reshape 到 (n_chunks, L, 1) 喂模型。
+        all_chunks = torch.from_numpy(np.stack(chunk_list, axis=0))
+
+        n_chunks = all_chunks.shape[0]
+        bs = max(int(self.batch_size), 1)
+
+        # 2) 按 batch_size 分批 forward；外层一个 with torch.no_grad()，
+        #    内层每个批次包 try/except OOM 自动减半重试。
+        with torch.no_grad():
+            i = 0
+            outs_np: list[np.ndarray] = []
+            while i < n_chunks:
+                batch_cpu = all_chunks[i : i + bs]
+                try:
+                    batch = batch_cpu.reshape(batch_cpu.shape[0], L, 1).to(
+                        self._device
+                    )
+                    s = self._model.infer(batch, norm=self.norm)
+                    # s: (batch, L) -> 搬到 CPU、转 numpy
+                    s_np = s.detach().cpu().numpy().reshape(batch_cpu.shape[0], L)
+                    outs_np.append(s_np)
+                    i += bs
+                except torch.cuda.OutOfMemoryError:
+                    # 释放显存，batch_size 减半重试同一批起点；不前移 i。
+                    try:
+                        torch.cuda.empty_cache()
+                    except Exception:
+                        pass
+                    bs = bs // 2
+                    if bs < 1:
+                        raise RuntimeError(
+                            "DADA OOM even at batch_size=1"
+                        )
+
+        out_all = np.concatenate(outs_np, axis=0)  # [n_chunks, L]
+
+        # 3) 写回原序列，最后一段只取前 (end-idx) 个点（与原版对齐）。
+        for k, start in enumerate(starts):
+            end = min(start + L, T)
+            scores[start:end] = out_all[k, : end - start]
 
         return scores

@@ -133,6 +133,62 @@ def resolve_graph_file(name: str, data_root: Optional[str | Path] = None) -> Pat
     return sorted(matches)[0]
 
 
+def _load_from_npz(name: str, data_root: Optional[str | Path] = None) -> Optional[DatasetBundle]:
+    """无 DGL 时的回退：从 export_graph_npz.py 预导出的 .npz 直接读特征矩阵。
+
+    只用于通用算法（Exp-2 / Exp-3）跑图模态 —— 它们只需要节点特征矩阵四元组，
+    不需要 DGL 图对象。图专用算法（DOMINANT/CoLA/GCN…）仍需真正的图对象，
+    npz 回退不覆盖它们（extras 里没有 'graph'，专用算法会自然报错跳过）。
+
+    查找路径：<data_root>/graph_npz/<name>.npz 以及若干常见位置。
+    找不到返回 None，由调用方决定是否继续走 DGL 路径。
+    """
+    candidates = []
+    if data_root is not None:
+        candidates.append(Path(data_root) / "graph_npz" / f"{name}.npz")
+    try:
+        root = get_data_root(data_root)
+        candidates.append(root / "graph_npz" / f"{name}.npz")
+        candidates.append(root / "graph" / "npz" / f"{name}.npz")
+    except Exception:
+        pass
+    # 项目根 data/graph_npz/（export 脚本的默认输出位置）
+    candidates.append(Path(__file__).resolve().parent.parent / "data" / "graph_npz" / f"{name}.npz")
+
+    npz_path = first_existing(candidates)
+    if npz_path is None or not npz_path.is_file():
+        return None
+
+    data = np.load(npz_path)
+    X_train = data["X_train"].astype(np.float64)
+    X_test = data["X_test"].astype(np.float64)
+    y_train = data["y_train"].astype(int).reshape(-1)
+    y_test = data["y_test"].astype(int).reshape(-1)
+    X_all = np.concatenate([X_train, X_test], axis=0)
+    y_all = np.concatenate([y_train, y_test], axis=0)
+
+    metadata = {
+        "source": "GADBench_npz_export",
+        "path": str(npz_path),
+        "n_nodes": int(X_all.shape[0]),
+        "n_features": int(X_all.shape[1]) if X_all.ndim > 1 else 1,
+        "n_anomalies": int(np.sum(y_all == 1)),
+        "anomaly_rate": float(np.mean(y_all == 1)) if len(y_all) else 0.0,
+        "split": "from_npz_export",
+        "note": "loaded from pre-exported npz (no DGL); graph object unavailable",
+    }
+    return DatasetBundle(
+        name=name,
+        modality="graph",
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        extras={"X_all": X_all, "y_all": y_all},
+        metadata=metadata,
+    )
+
+
 def load_gadbench_dataset(
     name: str,
     data_root: Optional[str | Path] = None,
@@ -143,12 +199,24 @@ def load_gadbench_dataset(
 
     返回按 mask 划分后的节点特征四元组，同时在 `extras` 中保留原始图对象、
     mask、全量特征和标签，方便图模型直接使用。
+
+    若 DGL 不可用（如机器 A 的 torch 2.7 装不了 DGL），自动回退到读取
+    scripts/export_graph_npz.py 预导出的 .npz（仅含特征矩阵，供通用算法使用）。
     """
 
     try:
         from dgl import load_graphs
     except ImportError as exc:
-        raise ImportError("DGL is required for GADBench loading. Install dgl first.") from exc
+        # DGL 不可用 → 尝试 npz 回退（通用算法够用）
+        bundle = _load_from_npz(name, data_root)
+        if bundle is not None:
+            return bundle
+        raise ImportError(
+            "DGL is required for GADBench loading, and no pre-exported npz was "
+            f"found for '{name}'. 在有 DGL 的机器上运行 "
+            "`python -m scripts.export_graph_npz` 生成 npz 并拷到本机 "
+            "data/graph_npz/ 后即可在无 DGL 环境跑图模态通用算法。"
+        ) from exc
 
     path = resolve_graph_file(name, data_root)
     graphs, aux = load_graphs(str(path))

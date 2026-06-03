@@ -40,7 +40,8 @@ def main() -> None:
                         help="Server data root. Defaults to AD_DATA_ROOT or ./data inside adapters.")
     parser.add_argument("--output-dir", default=str(ROOT / "results"),
                         help="Directory for CSV logs and per-run score artifacts.")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seeds", nargs="+", type=int, default=[41, 42, 43],
+                        help="List of random seeds to run (default: 41 42 43).")
     parser.add_argument("--modality", choices=["tabular", "timeseries", "graph", "all"],
                         default=None, help="Exp-1 modality filter.")
     parser.add_argument("--modalities", nargs="+",
@@ -59,23 +60,29 @@ def main() -> None:
     )
 
     t0 = time.perf_counter()
-    for exp in selected:
-        extra = [
-            "--output-dir", str(output_dir),
-            "--seed", str(args.seed),
-        ]
-        if args.data_root:
-            extra.extend(["--data-root", args.data_root])
-        if exp == "exp1" and args.modality:
-            extra.extend(["--modality", args.modality])
-        if exp == "exp2" and args.modalities:
-            exp2_modalities = [m for m in args.modalities if m in {"tabular", "timeseries", "graph"}]
-            if not exp2_modalities:
-                raise ValueError("Exp-2 only supports modalities: tabular, timeseries, graph")
-            extra.extend(["--modalities", *exp2_modalities])
-        if exp == "exp3" and args.modalities:
-            extra.extend(["--modalities", *args.modalities])
-        _run_module(EXPERIMENT_MODULES[exp], extra)
+    for seed in args.seeds:
+        print(f"\n" + "*" * 80)
+        print(f"*** STARTING RUN FOR SEED: {seed} ***")
+        print("*" * 80)
+        
+        for exp in selected:
+            extra = [
+                "--output-dir", str(output_dir),
+                "--seed", str(seed),
+                "--timestamped"
+            ]
+            if args.data_root:
+                extra.extend(["--data-root", args.data_root])
+            if exp == "exp1" and args.modality:
+                extra.extend(["--modality", args.modality])
+            if exp == "exp2" and args.modalities:
+                exp2_modalities = [m for m in args.modalities if m in {"tabular", "timeseries", "graph"}]
+                if not exp2_modalities:
+                    raise ValueError("Exp-2 only supports modalities: tabular, timeseries, graph")
+                extra.extend(["--modalities", *exp2_modalities])
+            if exp == "exp3" and args.modalities:
+                extra.extend(["--modalities", *args.modalities])
+            _run_module(EXPERIMENT_MODULES[exp], extra)
 
     elapsed = time.perf_counter() - t0
     print(f"\nAll requested experiments completed in {elapsed:.1f}s")

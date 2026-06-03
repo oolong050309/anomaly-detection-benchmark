@@ -49,7 +49,7 @@ class LSTMSupervisedDetector(TimeSeriesDetector, SupervisedDetector):
     random_state : int | None, default=42
     hidden_size : int, default=64
     num_layers : int, default=1
-    epochs : int, default=20
+    epochs : int, default=100
     batch_size : int, default=32
     lr : float, default=1e-3
     """
@@ -60,7 +60,7 @@ class LSTMSupervisedDetector(TimeSeriesDetector, SupervisedDetector):
         random_state: int | None = 42,
         hidden_size: int = 64,
         num_layers: int = 1,
-        epochs: int = 20,
+        epochs: int = 100,
         batch_size: int = 32,
         lr: float = 1e-3,
     ) -> None:
@@ -159,9 +159,15 @@ class LSTMSupervisedDetector(TimeSeriesDetector, SupervisedDetector):
 
         assert self._model is not None
         X3 = self._to_3d(X)
-        x_tensor = torch.from_numpy(X3.astype(np.float32)).to(self._device)
         self._model.eval()
+        
+        preds = []
         with torch.no_grad():
-            logits = self._model(x_tensor)
-            probs = torch.sigmoid(logits)
-        return probs.detach().cpu().numpy().astype(np.float64)
+            for i in range(0, len(X3), self.batch_size):
+                batch_x = X3[i:i + self.batch_size]
+                x_tensor = torch.from_numpy(batch_x.astype(np.float32)).to(self._device)
+                logits = self._model(x_tensor)
+                probs = torch.sigmoid(logits)
+                preds.append(probs.detach().cpu().numpy())
+                
+        return np.concatenate(preds).astype(np.float64)

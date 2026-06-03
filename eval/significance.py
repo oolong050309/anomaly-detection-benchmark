@@ -39,14 +39,18 @@ def build_rank_matrix(results_dir: str | Path, metric: str = "auc_roc") -> pd.Da
     df = latest_per_run_key(df, ["dataset_name", "algorithm_name"])
     if df.empty:
         return pd.DataFrame()
+    # In a cross-modal benchmark, no single dataset has all 26 algorithms.
+    # To prevent dropping all rows, we evaluate Friedman/Nemenyi only on the 15 
+    # universal algorithms across the tabular, cv, and nlp datasets.
     scores = df.pivot_table(index="dataset_name", columns="algorithm_name", values=metric, aggfunc="mean")
-    scores = scores.dropna(axis=1, how="all").dropna(axis=0, how="all")
-    # Friedman requires a complete repeated-measures matrix. Keep datasets where
-    # every compared algorithm is present, and drop algorithms with incomplete
-    # coverage only if needed.
-    complete_cols = scores.columns[scores.notna().sum(axis=0) >= 2]
-    scores = scores[complete_cols]
+    
+    # We drop any algorithms that are missing in more than 50% of the datasets
+    threshold = int(scores.shape[0] * 0.5)
+    scores = scores.dropna(axis=1, thresh=threshold)
+    
+    # Then we drop any datasets that don't have results for all remaining algorithms
     scores = scores.dropna(axis=0, how="any")
+    
     return scores
 
 

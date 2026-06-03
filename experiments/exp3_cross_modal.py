@@ -29,6 +29,14 @@ if str(ROOT) not in sys.path:
 
 from adapters import load_dataset
 from experiments.common import fit_and_score, record_failure, record_success
+from experiments.exp1_baseline import (
+    CV_DATASETS,
+    GRAPH_DATASETS,
+    NLP_DATASETS,
+    TABULAR_DATASETS,
+    TIMESERIES_DATASETS,
+    _borrow_for_supervised,
+)
 
 SEED = 42
 LOG_PATH = str(ROOT / "results" / "exp3_results.csv")
@@ -36,12 +44,19 @@ OUTPUT_DIR = str(ROOT / "results")
 
 
 def _get_universal_algos():
-    """11 个通用算法。"""
+    """15 个通用算法（接受 (n, d) 特征矩阵），与 Exp-1 tabular / Exp-2 完全一致。
+
+    跨模态对比的目的本就是观察同一算法在不同形态上的适用性差异，
+    因此不预先剔除"可能不稳"的深度/基础模型 —— 它们在哪些模态稳、
+    哪些模态失效（如 TabPFN 受 d<=100 限制，在 CV 512 维 / NLP 768 维上会失败），
+    本身就是要报告的结论。失败会被 record_failure 如实记录。
+    """
     from models import (
-        COPODDetector, ECODDetector, IForestDetector, IQRDetector,
-        KNNDetector, LightGBMDetector, LOFDetector,
-        LogisticRegressionDetector, OCSVMDetector,
-        RandomForestDetector, XGBoostDetector,
+        AutoEncoderDetector, COPODDetector, DeepSVDDDetector,
+        ECODDetector, IForestDetector, IQRDetector, KNNDetector,
+        LightGBMDetector, LOFDetector, LogisticRegressionDetector,
+        MLPDetector, OCSVMDetector, RandomForestDetector,
+        TabPFNDetector, XGBoostDetector,
     )
     return [
         # (name, class, kwargs, needs_y)
@@ -52,20 +67,26 @@ def _get_universal_algos():
         ("ECOD", ECODDetector, {}, False),
         ("COPOD", COPODDetector, {}, False),
         ("OCSVM", OCSVMDetector, {}, False),
+        ("AutoEncoder", AutoEncoderDetector, {"epoch_num": 100}, False),
+        ("DeepSVDD", DeepSVDDDetector, {"epochs": 100}, False),
         ("LR", LogisticRegressionDetector, {}, True),
         ("RF", RandomForestDetector, {"n_estimators": 100}, True),
-        ("XGBoost", XGBoostDetector, {"n_estimators": 50}, True),
-        ("LightGBM", LightGBMDetector, {"n_estimators": 50}, True),
+        ("MLP", MLPDetector, {"max_iter": 200}, True),
+        ("XGBoost", XGBoostDetector, {"n_estimators": 100}, True),
+        ("LightGBM", LightGBMDetector, {"n_estimators": 100}, True),
+        ("TabPFN", TabPFNDetector, {}, True),
     ]
 
 
-# 每种形态选 1~2 个代表性数据集
+# 跨模态对比：与 Exp-1 使用完全相同的全量数据集（直接复用 Exp-1 常量，
+# 避免两处数据集列表漂移）。Exp-1 的 --modality tabular 把 CV/NLP 也并入
+# tabular 跑，这里按真实模态拆开，5 种形态各自用各自的全量列表。
 MODALITY_DATASETS = {
-    "tabular": ["cardio", "satellite"],
-    "cv": ["cifar10_0", "fashionmnist_0"],
-    "nlp": ["20news_0", "amazon"],
-    "timeseries": ["276_IOPS_id_17_WebService"],
-    "graph": ["reddit"],
+    "tabular": list(TABULAR_DATASETS),
+    "cv": list(CV_DATASETS),
+    "nlp": list(NLP_DATASETS),
+    "timeseries": list(TIMESERIES_DATASETS),
+    "graph": list(GRAPH_DATASETS),
 }
 
 
@@ -78,7 +99,7 @@ def _load_as_2d(modality: str, ds_name: str, data_root=None):
     if modality == "timeseries":
         bundle = load_dataset(ds_name, modality="timeseries",
                               data_root=data_root,
-                              window_size=64, stride=32)
+                              window_size=100, stride=10)
         return bundle, bundle.as_tuple()
 
     if modality == "graph":
@@ -99,10 +120,34 @@ def main():
     parser.add_argument("--output-dir", default=str(ROOT / "results"))
     parser.add_argument("--log-path", default=None)
     parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument(
+        "--timestamped",
+        action="store_true",
+        help="把本次运行结果隔离到 <output-dir>/runs/exp3_<modality_tag>_<UTC>/ 子目录，"
+             "避免和历史 CSV 叠加。会在该目录下生成 exp3_results.csv 与 artifacts/。",
+    )
+    parser.add_argument(
+        "--run-tag",
+        default=None,
+        help="搭配 --timestamped 使用，给本次运行打额外标签，目录名变成 "
+             "exp3_<modality_tag>_<run-tag>_<UTC>/。无 --timestamped 时此参数被忽略。",
+    )
     args = parser.parse_args()
 
     SEED = int(args.seed)
     OUTPUT_DIR = str(Path(args.output_dir))
+
+    # --timestamped: 把本次运行隔到独立目录，不污染历史 CSV
+    if args.timestamped:
+        from datetime import datetime, timezone
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        modality_tag = "_".join(args.modalities)
+        tag_part = f"_{args.run_tag}" if args.run_tag else ""
+        run_dir = Path(OUTPUT_DIR) / "runs" / f"exp3_{modality_tag}{tag_part}_{ts}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        OUTPUT_DIR = str(run_dir)
+        print(f"[exp3] timestamped run dir → {OUTPUT_DIR}")
+
     LOG_PATH = str(Path(args.log_path) if args.log_path else Path(OUTPUT_DIR) / "exp3_results.csv")
 
     algos = _get_universal_algos()
@@ -129,11 +174,25 @@ def main():
                     det = Cls(contamination=0.1, random_state=SEED, **kwargs)
                     if needs_y:
                         if len(np.unique(y_tr)) < 2:
-                            raise RuntimeError("y_train has single class")
-                        fit_args = (X_tr, y_tr)
+                            # Bug 1 修复：从 test 借异常窗口
+                            X_tr_use, y_tr_use, X_te_use, y_te_use, borrowed_n, borrow_note = (
+                                _borrow_for_supervised(X_tr, y_tr, X_te, y_te, rng_seed=SEED)
+                            )
+                            if len(np.unique(y_tr_use)) < 2:
+                                raise RuntimeError("y_train has single class (borrow failed)")
+                        else:
+                            X_tr_use, y_tr_use, X_te_use, y_te_use = X_tr, y_tr, X_te, y_te
+                            borrow_note = ""
+                        fit_args = (X_tr_use, y_tr_use)
                     else:
+                        X_te_use, y_te_use = X_te, y_te
+                        borrow_note = ""
                         fit_args = (X_tr,)
-                    scores, fit_t, pred_t = fit_and_score(det, fit_args, X_te)
+                    scores, fit_t, pred_t = fit_and_score(det, fit_args, X_te_use)
+
+                    notes_str = f"exp3_modality={modality}"
+                    if borrow_note:
+                        notes_str += f"; {borrow_note}"
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
@@ -144,15 +203,15 @@ def main():
                             modality=modality,
                             dataset_name=f"{modality}/{ds}",
                             algorithm_name=name,
-                            y_true=y_te,
+                            y_true=y_te_use,
                             scores=scores,
                             fit_time_sec=fit_t,
                             predict_time_sec=pred_t,
                             seed=SEED,
                             fit_params=kwargs,
-                            notes=f"exp3_modality={modality}",
-                            X_train=X_tr,
-                            y_train=y_tr,
+                            notes=notes_str,
+                            X_train=X_tr_use if needs_y else X_tr,
+                            y_train=y_tr_use if needs_y else y_tr,
                         )
                     print(f"    [{name:>10s}] AUC-ROC={m['auc_roc']:.4f}")
                     n_ok += 1

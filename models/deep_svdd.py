@@ -30,7 +30,7 @@ class DeepSVDDDetector(BaseDetector):
         self,
         contamination: float = 0.1,
         random_state: int | None = 42,
-        epochs: int = 20,
+        epochs: int = 100,
         batch_size: int = 64,
         **algo_kwargs: Any,
     ) -> None:
@@ -46,7 +46,14 @@ class DeepSVDDDetector(BaseDetector):
         _set_torch_seed(self.random_state)
         np.random.seed(self.random_state if self.random_state is not None else 42)
 
-        from pyod.models.deep_svdd import DeepSVDD
+        try:
+            from pyod.models.deep_svdd import DeepSVDD
+        except ImportError as e:
+            # pyod 2.x 的 deep_svdd 是 PyTorch 实现；老版可能拽进 tensorflow。
+            raise RuntimeError(
+                "[DeepSVDDDetector] 无法导入 PyTorch 版 DeepSVDD。"
+                "请升级到 pyod>=2.0（深度模型统一为 PyTorch，无需 tensorflow）。"
+            ) from e
 
         n_features = X.shape[1]
 
@@ -61,14 +68,26 @@ class DeepSVDDDetector(BaseDetector):
                     "gpu": cuda_device_index(),
                 },
             )
-            self._model = DeepSVDD(
-                n_features=n_features,
-                epochs=self.epochs,
-                batch_size=self.batch_size,
-                contamination=self.contamination,
-                random_state=self.random_state,
-                **model_kwargs,
-            )
+            import inspect
+            _svdd_params = inspect.signature(DeepSVDD.__init__).parameters
+            if "n_features" in _svdd_params:
+                self._model = DeepSVDD(
+                    n_features=n_features,
+                    epochs=self.epochs,
+                    batch_size=self.batch_size,
+                    contamination=self.contamination,
+                    random_state=self.random_state,
+                    **model_kwargs,
+                )
+            else:
+                # pyod >=1.1: n_features removed, inferred automatically
+                self._model = DeepSVDD(
+                    epochs=self.epochs,
+                    batch_size=self.batch_size,
+                    contamination=self.contamination,
+                    random_state=self.random_state,
+                    **model_kwargs,
+                )
             self._model.fit(X)
         except Exception as e:
             raise RuntimeError(

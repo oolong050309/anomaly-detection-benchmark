@@ -1,0 +1,2 @@
+metric,n_datasets,n_algorithms,alpha,friedman_statistic,friedman_pvalue,critical_difference
+auc_roc,17,14,0.05,153.88880268942336,3.388284301484982e-26,4.811972329475607

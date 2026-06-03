@@ -64,9 +64,42 @@ def _heatmap(
     cmap: str = "viridis",
     vmin: float | None = 0.0,
     vmax: float | None = 1.0,
+    dataset_to_modality: dict[str, str] | None = None,
 ) -> Path:
     if matrix.empty:
         return _empty_notice(path, title, "No valid rows available.")
+    
+    # ------------------------------------------------------------------------
+    # [Prettify Heatmap] Sort rows (algorithms) and columns (datasets)
+    # ------------------------------------------------------------------------
+    ALGO_GROUPS = {
+        "Statistical/Proximity": ["IQR", "LOF", "KNN"],
+        "Trees/Ensembles": ["IForest", "ECOD", "COPOD", "RF", "XGBoost", "LightGBM"],
+        "Linear/Boundary": ["LR", "OCSVM"],
+        "Deep/Neural": ["MLP", "AutoEncoder", "DeepSVDD", "TabPFN"],
+        "TimeSeries": ["LSTM-AE", "LSTM-Sup", "MiniRocket", "MatrixProfile", "DADA"],
+        "Graph": ["DOMINANT", "CoLA", "GCN", "BWGNN", "XGBGraph", "UNPrompt"]
+    }
+    
+    # Create an ordered list of algorithms for the Y axis
+    ordered_algos = []
+    for group, algos in ALGO_GROUPS.items():
+        ordered_algos.extend([a for a in algos if a in matrix.index])
+    # Add any remaining ones that were not explicitly listed
+    for a in matrix.index:
+        if a not in ordered_algos:
+            ordered_algos.append(a)
+    
+    # Create an ordered list of datasets for the X axis based on modality
+    ordered_datasets = list(matrix.columns)
+    if dataset_to_modality is not None:
+        # Sort columns primarily by modality, then alphabetically by dataset name
+        ordered_datasets.sort(key=lambda d: (dataset_to_modality.get(d, "z"), d))
+    
+    # Reindex the matrix with the beautiful ordering
+    matrix = matrix.loc[ordered_algos, ordered_datasets]
+    # ------------------------------------------------------------------------
+
     h = max(4.0, 0.35 * len(matrix.index) + 2.0)
     w = max(7.0, 0.38 * len(matrix.columns) + 3.0)
     fig, ax = plt.subplots(figsize=(w, h))
@@ -117,19 +150,31 @@ def _plot_table(df: pd.DataFrame, path: str | Path, title: str, max_rows: int = 
 def plot_exp1(results_dir: str | Path, figures_dir: str | Path, metric: str = "auc_roc") -> list[Path]:
     out_dir = ensure_dir(Path(figures_dir) / "exp1")
     df = successful_runs(read_experiment(results_dir, "exp1"), metric=metric)
-    df = latest_per_run_key(df, ["dataset_name", "algorithm_name"])
+    df = latest_per_run_key(df, ["dataset_name", "algorithm_name", "modality"])
     outputs: list[Path] = []
     if df.empty:
         outputs.append(_empty_notice(out_dir / "exp1_no_results.png", "Exp-1", "No successful Exp-1 rows."))
         return outputs
 
-    pivot = df.pivot_table(index="algorithm_name", columns="dataset_name", values=metric, aggfunc="mean")
-    pivot = pivot.loc[pivot.mean(axis=1).sort_values(ascending=False).index]
+    # Handle datasets with the same name but different modalities (e.g., 'amazon' in NLP and Graph)
+    modality_counts = df.groupby("dataset_name")["modality"].nunique()
+    conflict_datasets = modality_counts[modality_counts > 1].index
+    df["display_name"] = df.apply(
+        lambda row: f"{row['dataset_name']} ({row['modality']})" if row['dataset_name'] in conflict_datasets else row['dataset_name'],
+        axis=1
+    )
+
+    pivot = df.pivot_table(index="algorithm_name", columns="display_name", values=metric, aggfunc="mean")
+    
+    # Create a mapping of dataset to modality
+    dataset_to_modality = dict(zip(df["display_name"], df["modality"]))
+    
     outputs.append(_heatmap(pivot, out_dir / f"exp1_{metric}_heatmap.png",
                             title=f"Exp-1 algorithm x dataset ({metric})",
-                            cbar_label=metric))
+                            cbar_label=metric,
+                            dataset_to_modality=dataset_to_modality))
 
-    ranks = df.pivot_table(index="dataset_name", columns="algorithm_name", values=metric, aggfunc="mean")
+    ranks = df.pivot_table(index="display_name", columns="algorithm_name", values=metric, aggfunc="mean")
     rank_by_dataset = ranks.rank(axis=1, ascending=False, method="average")
     mean_rank = rank_by_dataset.mean(axis=0).sort_values()
     fig, ax = plt.subplots(figsize=(max(8, 0.42 * len(mean_rank)), 5))

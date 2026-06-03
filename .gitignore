@@ -250,16 +250,17 @@ data/graph/*
 !data/__init__.py
 
 # Generated experiment outputs
-results/*.csv
-results/*.json
+results/runs/
+results/artifacts/
+!results/exp1_results.csv
+!results/exp2_results.csv
+!results/exp3_results.csv
 !results/.gitkeep
 
 # Generated figures
-figures/exp1/*
-figures/exp2/*
-figures/exp3/*
-figures/error_analysis/*
-!figures/**/.gitkeep
+# 之前默认忽略了 figures，但现在我们需要上传这些精美的实验结果图！
+!figures/
+!figures/*
 
 # Local install logs
 install.log

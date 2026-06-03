@@ -2,6 +2,20 @@
 
 使用 ``stumpy.stump`` 计算 matrix profile —— 每个子序列的最近邻距离。
 距离越大表示越罕见，即异常分数越大。
+
+GPU 环境注意事项
+----------------
+``stumpy`` 在 ``import`` 时就让 numba 编译 GPU kernel（``gpu_aamp.py``）。
+若进程可见 GPU，而 numba/CUDA 版本不兼容，会在 import 阶段直接崩
+（``_gpu_searchsorted_right`` TypingError）。这无法在运行时绕过。
+
+解决办法：跑实验前在 **进程启动时** 设环境变量 ``NUMBA_DISABLE_CUDA=1``。
+它只禁用 numba 的 CUDA（stumpy 走 CPU），**不影响 PyTorch 的 GPU**
+（torch 用自己的 CUDA，不经过 numba）。因此时序模态可同时：
+LSTM/DADA 用 GPU（CUDA_VISIBLE_DEVICES=0），MatrixProfile 用 CPU。
+
+    export CUDA_VISIBLE_DEVICES=0
+    export NUMBA_DISABLE_CUDA=1
 """
 
 from __future__ import annotations
@@ -59,7 +73,12 @@ class MatrixProfileDetector(TimeSeriesDetector):
             if self._train_seq is not None and self._train_seq.size > m:
                 # AB-join: score each test subsequence by its nearest training
                 # subsequence, so Exp-2 train contamination can affect scores.
-                mp = stumpy.stump(seq, m=m, T_B=self._train_seq)
+                # T_A=test, T_B=train。AB-join 必须 ignore_trivial=False，
+                # 否则 stumpy 会套用 self-join 的平凡匹配排除逻辑，可能返回
+                # 空 / 异常 profile（曾导致 distances[-1] IndexError）。
+                mp = stumpy.stump(
+                    seq, m=m, T_B=self._train_seq, ignore_trivial=False
+                )
             else:
                 mp = stumpy.stump(seq, m=m)
         except Exception as e:
@@ -68,13 +87,19 @@ class MatrixProfileDetector(TimeSeriesDetector):
             ) from e
 
         # mp[:, 0] 是每个子序列起点的最近邻距离，长度为 len(seq)-m+1
-        # 为了得到与输入序列等长的分数数组，把每个子序列的分数赋给其起点位置，
-        # 末尾不足一个窗口的位置填最后一个有效分数
-        distances = np.asarray(mp[:, 0], dtype=np.float64)
+        # 把每个子序列的分数赋给其起点位置，末尾不足一窗的位置填最后一个有效分数
+        distances = np.asarray(mp[:, 0], dtype=np.float64).ravel()
+        # stumpy 在某些 AB-join / 退化输入下可能返回空或含 inf/nan 的 profile，
+        # 这里做健壮化处理，避免 distances[-1] 越界或分数含非有限值。
+        if distances.size == 0:
+            return np.zeros(seq.size, dtype=np.float64)
+        distances = np.nan_to_num(distances, nan=0.0, posinf=0.0, neginf=0.0)
+
         # 对齐到 seq 长度
         scores = np.empty(seq.size, dtype=np.float64)
-        scores[: distances.size] = distances
-        scores[distances.size :] = distances[-1]
+        fill = min(distances.size, seq.size)
+        scores[:fill] = distances[:fill]
+        scores[fill:] = distances[fill - 1] if fill > 0 else 0.0
 
         # 如果输入是 2D 窗口形式 (n_windows, w)，按窗口起点取分数
         if X.ndim == 2:

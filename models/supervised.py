@@ -206,15 +206,11 @@ class XGBoostDetector(SupervisedDetector):
 
         spw = _scale_pos_weight(y)
         try:
+            # 强制 CPU 训练：避免 numpy 输入与 GPU 模型间的反复拷贝
+            # （在 < 50 万样本的数据集上 CPU hist 通常比 GPU 还快）
             model_kwargs = dict(self._algo_kwargs)
-            if get_preferred_device().startswith("cuda"):
-                # XGBoost >= 2.0 uses device='cuda' with tree_method='hist'.
-                # Older releases ignore 'device' poorly, so fallback below
-                # retries with the legacy gpu_hist setting if needed.
-                model_kwargs.setdefault("device", "cuda")
-                model_kwargs.setdefault("tree_method", "hist")
-            else:
-                model_kwargs.setdefault("tree_method", "hist")
+            model_kwargs.setdefault("tree_method", "hist")
+            model_kwargs.setdefault("device", "cpu")
             self._model = XGBClassifier(
                 n_estimators=self.n_estimators,
                 max_depth=self.max_depth,
@@ -225,25 +221,7 @@ class XGBoostDetector(SupervisedDetector):
                 n_jobs=-1,
                 **model_kwargs,
             )
-            try:
-                self._model.fit(X, y)
-            except Exception:
-                if get_preferred_device().startswith("cuda"):
-                    legacy_kwargs = dict(self._algo_kwargs)
-                    legacy_kwargs.setdefault("tree_method", "gpu_hist")
-                    self._model = XGBClassifier(
-                        n_estimators=self.n_estimators,
-                        max_depth=self.max_depth,
-                        learning_rate=self.learning_rate,
-                        scale_pos_weight=spw,
-                        random_state=self.random_state,
-                        eval_metric="logloss",
-                        n_jobs=-1,
-                        **legacy_kwargs,
-                    )
-                    self._model.fit(X, y)
-                else:
-                    raise
+            self._model.fit(X, y)
         except Exception as e:
             raise RuntimeError(
                 f"[{type(self).__name__}] 训练失败: {e}"
@@ -357,10 +335,14 @@ class TabPFNDetector(SupervisedDetector):
                     **model_kwargs,
                 )
             except TypeError:
-                # 旧版 TabPFN 不支持 ignore_pretraining_limits 参数
-                self._model = TabPFNClassifier(
-                    random_state=self.random_state, **model_kwargs
-                )
+                try:
+                    # 旧版 TabPFN 不支持 ignore_pretraining_limits 参数
+                    self._model = TabPFNClassifier(
+                        random_state=self.random_state, **model_kwargs
+                    )
+                except TypeError:
+                    # 更旧版 TabPFN (0.1.x) 不支持 random_state 参数
+                    self._model = TabPFNClassifier(**model_kwargs)
             self._model.fit(X, y)
         except Exception as e:
             raise RuntimeError(

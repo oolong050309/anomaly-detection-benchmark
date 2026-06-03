@@ -49,16 +49,37 @@ def _select_device(prefer_cuda: bool = True) -> str:
 
 
 def _pyg_to_normalized_adj(graph, device: str):
-    """从 PyG Data 构造 UNPrompt 期望的两个稀疏邻接矩阵：
+    """从 PyG Data 或 DGL 图构造 UNPrompt 期望的两个稀疏邻接矩阵：
     - adj_withloop : 加自环并做对称归一化（用于 GCN）
     - adj_woself   : 不含自环并做对称归一化（用于 prompt 阶段无邻居 / 有邻居对照）
     """
     import scipy.sparse as sp
     import torch
 
-    n = int(graph.x.shape[0])
-    ei = graph.edge_index.cpu().numpy()
-    src, dst = ei[0], ei[1]
+    # 兼容 PyG Data 和 DGL 图
+    if hasattr(graph, "x") and hasattr(graph, "edge_index"):
+        # PyG Data
+        n = int(np.asarray(graph.x).shape[0])
+        ei = graph.edge_index
+        if hasattr(ei, "detach"):
+            ei = ei.detach().cpu().numpy()
+        else:
+            ei = np.asarray(ei)
+        src, dst = ei[0], ei[1]
+    elif hasattr(graph, "ndata") and hasattr(graph, "edges"):
+        # DGL graph
+        feat_key = "feature" if "feature" in graph.ndata else (
+            "feat" if "feat" in graph.ndata else "x"
+        )
+        n = int(graph.ndata[feat_key].shape[0])
+        src_t, dst_t = graph.edges()
+        src = src_t.detach().cpu().numpy()
+        dst = dst_t.detach().cpu().numpy()
+    else:
+        raise ValueError(
+            f"Unsupported graph type {type(graph).__name__}; expected PyG Data or DGL graph"
+        )
+
     data = np.ones_like(src, dtype=np.float32)
     adj = sp.coo_matrix((data, (src, dst)), shape=(n, n)).tocsr()
     # 对称化（确保无向）
@@ -180,7 +201,22 @@ class UNPromptDetector(GraphDetector):
         device = _select_device()
 
         # 1. 特征统一降维到 unifeat（UNPrompt 的关键预处理）
-        feats = graph.x.float()
+        # 兼容 PyG Data 与 DGL 图
+        if hasattr(graph, "x") and graph.x is not None:
+            x_raw = graph.x
+            if hasattr(x_raw, "float"):
+                feats = x_raw.float() if hasattr(x_raw, "detach") else torch.from_numpy(np.asarray(x_raw, dtype=np.float32))
+            else:
+                feats = torch.from_numpy(np.asarray(x_raw, dtype=np.float32))
+        elif hasattr(graph, "ndata"):
+            feat_key = "feature" if "feature" in graph.ndata else (
+                "feat" if "feat" in graph.ndata else "x"
+            )
+            feats = graph.ndata[feat_key].float()
+        else:
+            raise ValueError(
+                f"Cannot extract node features from {type(graph).__name__}"
+            )
         if feats.shape[1] >= self.unifeat:
             feats = x_svd(feats, self.unifeat)
         else:
@@ -257,8 +293,11 @@ class UNPromptDetector(GraphDetector):
             emb_mlp = proj(model(modified, None))
             sim = completionsim(emb_mlp, emb_nei)  # 越大表示越相似（越正常）
 
-        # 异常分数 = 1 - 归一化相似度（越大越异常）
-        sim_np = sim.cpu().numpy().astype(np.float64).ravel()
+        # completionsim 内部已经 detach + cpu + numpy 了，但兼容 tensor 输入也无妨
+        if hasattr(sim, "detach"):
+            sim_np = sim.detach().cpu().numpy().astype(np.float64).ravel()
+        else:
+            sim_np = np.asarray(sim, dtype=np.float64).ravel()
         # 归一化到 [0, 1]
         s_min, s_max = sim_np.min(), sim_np.max()
         if s_max - s_min > 1e-12:
