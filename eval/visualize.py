@@ -93,8 +93,15 @@ def _heatmap(
     # Create an ordered list of datasets for the X axis based on modality
     ordered_datasets = list(matrix.columns)
     if dataset_to_modality is not None:
-        # Sort columns primarily by modality, then alphabetically by dataset name
-        ordered_datasets.sort(key=lambda d: (dataset_to_modality.get(d, "z"), d))
+        MODALITY_ORDER = {
+            "tabular": 1,
+            "cv": 2,
+            "nlp": 3,
+            "timeseries": 4,
+            "graph": 5
+        }
+        # Sort columns primarily by modality order, then alphabetically by dataset name
+        ordered_datasets.sort(key=lambda d: (MODALITY_ORDER.get(dataset_to_modality.get(d, ""), 99), d))
     
     # Reindex the matrix with the beautiful ordering
     matrix = matrix.loc[ordered_algos, ordered_datasets]
@@ -194,12 +201,33 @@ def plot_exp1(results_dir: str | Path, figures_dir: str | Path, metric: str = "a
         .agg({metric: "mean", "total_time_sec": "median", "param_proxy": "median"})
         .sort_values(metric, ascending=False)
     )
+    eff_summary["total_time_sec"] = eff_summary["total_time_sec"].clip(lower=0.01)
+    
     fig, ax = plt.subplots(figsize=(8, 5.5))
     sizes = 35 + 18 * np.sqrt(eff_summary["param_proxy"].clip(lower=1).to_numpy())
-    ax.scatter(eff_summary["total_time_sec"], eff_summary[metric], s=sizes, alpha=0.72, color="#f58518", edgecolor="black", linewidth=0.4)
+    
+    SUPERVISED_ALGOS = {"XGBoost", "LightGBM", "RF", "LR", "MLP", "TabPFN", "XGBGraph", "BWGNN", "GCN", "LSTM-Sup"}
+    colors = ["#f58518" if algo in SUPERVISED_ALGOS else "#4c78a8" for algo in eff_summary["algorithm_name"]]
+    
+    ax.scatter(eff_summary["total_time_sec"], eff_summary[metric], s=sizes, alpha=0.72, c=colors, edgecolor="black", linewidth=0.4)
+    
+    import matplotlib.lines as mlines
+    unsup_handle = mlines.Line2D([], [], color='white', marker='o', markerfacecolor='#4c78a8', markersize=8, markeredgecolor='black', markeredgewidth=0.4, label='Unsupervised')
+    sup_handle = mlines.Line2D([], [], color='white', marker='o', markerfacecolor='#f58518', markersize=8, markeredgecolor='black', markeredgewidth=0.4, label='Supervised')
+    ax.legend(handles=[unsup_handle, sup_handle], loc="lower right", fontsize=8, frameon=True)
+    
+    texts = []
     for _, row in eff_summary.iterrows():
-        ax.annotate(row["algorithm_name"], (row["total_time_sec"], row[metric]), fontsize=7, xytext=(4, 3), textcoords="offset points")
-    ax.set_xscale("symlog", linthresh=1e-3)
+        texts.append(ax.text(row["total_time_sec"], row[metric], row["algorithm_name"], fontsize=8))
+        
+    ax.set_xscale("log")
+    
+    try:
+        from adjustText import adjust_text
+        adjust_text(texts, arrowprops=dict(arrowstyle="-", color='gray', lw=0.5))
+    except ImportError:
+        pass
+        
     ax.set_title("Exp-1 performance-efficiency tradeoff")
     ax.set_xlabel("Median fit+predict time (sec, symlog)")
     ax.set_ylabel(f"Mean {metric}")
@@ -250,17 +278,39 @@ def plot_exp2(results_dir: str | Path, figures_dir: str | Path, metric: str = "a
         .mean()
         .dropna(subset=["rate", metric])
     )
+    SUPERVISED_ALGOS = {"XGBoost", "LightGBM", "RF", "LR", "MLP", "TabPFN", "XGBGraph", "BWGNN", "GCN", "LSTM-Sup"}
+
     for modality, part in curve.groupby("modality"):
-        fig, ax = plt.subplots(figsize=(8, 5.5))
-        for algo, g in part.groupby("algorithm_name"):
-            g = g.sort_values("rate")
-            ax.plot(g["rate"] * 100, g[metric], marker="o", linewidth=1.7, label=algo)
+        # Make width slightly larger to fit external legend
+        fig, ax = plt.subplots(figsize=(9, 5.5))
+        
+        algos = sorted(part["algorithm_name"].unique())
+        cmap = plt.get_cmap("tab20")
+        
+        for idx, algo in enumerate(algos):
+            g = part[part["algorithm_name"] == algo].sort_values("rate")
+            is_sup = algo in SUPERVISED_ALGOS
+            
+            ls = "-" if is_sup else "--"
+            marker = "D" if is_sup else "o"
+            label = f"{algo} (Sup)" if is_sup else f"{algo} (Unsup)"
+            
+            ax.plot(g["rate"] * 100, g[metric], marker=marker, linestyle=ls, linewidth=1.8, markersize=5, label=label, color=cmap(idx % 20))
+
         ax.set_title(f"Exp-2 contamination degradation ({modality})")
         ax.set_xlabel("Training contamination / label flip rate (%)")
         ax.set_ylabel(metric)
-        ax.set_ylim(0, 1.03)
+        
+        # By NOT setting ax.set_ylim(0, 1.03), Matplotlib will dynamically auto-scale the Y-axis.
+        # This acts as a magnifying glass (放大纵轴截距) to clearly show gaps between closely performing models.
+        ax.margins(y=0.08)
         ax.grid(alpha=0.25)
-        ax.legend(fontsize=7, ncol=2, frameon=False)
+        
+        # Place legend completely outside the plot box to prevent covering data
+        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8, borderaxespad=0.)
+        # Use tight_layout to ensure the external legend is saved
+        fig.tight_layout()
+        
         outputs.append(_save(fig, out_dir / f"exp2_degradation_{modality}.png"))
 
     baseline = curve.loc[curve.groupby(["modality", "algorithm_name"])["rate"].idxmin()]
@@ -277,9 +327,13 @@ def plot_exp2(results_dir: str | Path, figures_dir: str | Path, metric: str = "a
     outputs.append(_plot_table(table, out_dir / "exp2_robustness_ranking.png", "Exp-2 robustness ranking (smaller drop is better)"))
 
     cross = ranking.pivot_table(index="algorithm_name", columns="modality", values="auc_drop", aggfunc="mean")
+    
+    # Calculate the max absolute value to center the colormap at 0
+    max_abs_drop = np.nanmax(np.abs(cross.values))
+    
     outputs.append(_heatmap(cross, out_dir / "exp2_cross_modal_auc_drop_heatmap.png",
                             title="Exp-2 AUC drop by algorithm and modality",
-                            cbar_label="AUC drop", cmap="magma", vmin=None, vmax=None))
+                            cbar_label="AUC drop", cmap="coolwarm", vmin=-max_abs_drop, vmax=max_abs_drop))
     return outputs
 
 
@@ -294,9 +348,46 @@ def plot_exp3(results_dir: str | Path, figures_dir: str | Path, metric: str = "a
 
     mod = df.pivot_table(index="algorithm_name", columns="modality", values=metric, aggfunc="mean")
     mod = mod.loc[mod.mean(axis=1).sort_values(ascending=False).index]
+    
+    # Ensure a logical order for the modalities on the X-axis
+    MODALITY_ORDER = {"tabular": 1, "cv": 2, "nlp": 3, "timeseries": 4, "graph": 5}
+    ordered_cols = sorted(mod.columns, key=lambda x: MODALITY_ORDER.get(x, 99))
+    mod = mod[ordered_cols]
+    
     outputs.append(_heatmap(mod, out_dir / f"exp3_algorithm_modality_{metric}_heatmap.png",
                             title=f"Exp-3 algorithm x modality ({metric})",
-                            cbar_label=metric))
+                            cbar_label=metric, cmap="Blues"))
+
+    # --- NEW: Cross-modal line chart (Parallel Coordinates style) ---
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    SUPERVISED_ALGOS = {"XGBoost", "LightGBM", "RF", "LR", "MLP", "TabPFN", "XGBGraph", "BWGNN", "GCN", "LSTM-Sup"}
+    cmap = plt.get_cmap("tab20")
+    
+    x_pos = np.arange(len(ordered_cols))
+    for idx, algo in enumerate(mod.index):
+        y_vals = mod.loc[algo].to_numpy()
+        is_sup = algo in SUPERVISED_ALGOS
+        
+        ls = "-" if is_sup else "--"
+        marker = "D" if is_sup else "o"
+        label = f"{algo} (Sup)" if is_sup else f"{algo} (Unsup)"
+        
+        # Connect dots but break at NaNs automatically
+        ax.plot(x_pos, y_vals, marker=marker, linestyle=ls, linewidth=1.8, markersize=5, label=label, color=cmap(idx % 20))
+
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels([m.capitalize() for m in ordered_cols], weight="bold")
+    ax.set_title(f"Exp-3 Cross-modal performance profile ({metric})")
+    ax.set_xlabel("Modality")
+    ax.set_ylabel(metric)
+    ax.margins(y=0.08)
+    ax.grid(alpha=0.25)
+    
+    # Place legend completely outside the plot box
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8, borderaxespad=0.)
+    fig.tight_layout()
+    outputs.append(_save(fig, out_dir / "exp3_cross_modal_lines.png"))
+    # ----------------------------------------------------------------
 
     difficulty = mod.mean(axis=0).sort_values(ascending=False)
     fig, ax = plt.subplots(figsize=(7, 4.5))
@@ -315,17 +406,28 @@ def plot_exp3(results_dir: str | Path, figures_dir: str | Path, metric: str = "a
         angles += angles[:1]
         fig = plt.figure(figsize=(7, 7))
         ax = fig.add_subplot(111, polar=True)
-        top_algos = radar.mean(axis=1).sort_values(ascending=False).head(8).index
-        for algo in top_algos:
-            values = radar.loc[algo].fillna(0).to_numpy(dtype=float).tolist()
+        
+        # Limit to top 5 algorithms to avoid clutter
+        top_algos = radar.mean(axis=1).sort_values(ascending=False).head(5).index
+        cmap = plt.get_cmap("Set1")
+        
+        for idx, algo in enumerate(top_algos):
+            # Fill NaNs with a low baseline score rather than 0 so lines don't crash to the absolute center
+            values = radar.loc[algo].fillna(0.4).to_numpy(dtype=float).tolist()
             values += values[:1]
-            ax.plot(angles, values, linewidth=1.5, label=algo)
-            ax.fill(angles, values, alpha=0.08)
+            ax.plot(angles, values, linewidth=2.5, marker="o", markersize=6, label=algo, color=cmap(idx))
+            ax.fill(angles, values, alpha=0.1, color=cmap(idx))
+            
         ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(modalities)
-        ax.set_ylim(0, 1)
-        ax.set_title("Exp-3 radar: cross-modal coverage")
-        ax.legend(loc="upper right", bbox_to_anchor=(1.28, 1.08), fontsize=8, frameon=False)
+        ax.set_xticklabels(modalities, fontsize=10, weight="bold")
+        
+        # Set y-limit from 0.4 to 1.0 to magnify the performance differences (放大雷达图的差距)
+        ax.set_ylim(0.4, 1.0)
+        ax.set_yticks([0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        ax.set_yticklabels(["0.5", "0.6", "0.7", "0.8", "0.9", "1.0"], color="gray", size=8)
+        
+        ax.set_title("Exp-3 radar: cross-modal coverage (Magnified)", pad=20, fontsize=13)
+        ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.1), fontsize=9, frameon=True)
         outputs.append(_save(fig, out_dir / "exp3_radar_top_algorithms.png"))
     else:
         outputs.append(_empty_notice(out_dir / "exp3_radar_top_algorithms.png", "Exp-3 radar", "Need at least three modalities."))
@@ -392,11 +494,91 @@ def plot_error_analysis(results_dir: str | Path, figures_dir: str | Path, metric
     return outputs
 
 
+def plot_exp4(results_dir: str | Path, figures_dir: str | Path, metric: str = "auc_roc") -> list[Path]:
+    out_dir = ensure_dir(Path(figures_dir) / "exp4")
+    df = successful_runs(read_experiment(results_dir, "exp4"), metric=metric)
+    outputs: list[Path] = []
+    if df.empty:
+        outputs.append(_empty_notice(out_dir / "exp4_no_results.png", "Exp-4", "No successful Exp-4 rows. Please run Exp-4 first."))
+        return outputs
+
+    # Try loading Exp-1 results to extract clean reference baselines for unsupervised models
+    df_exp1 = pd.DataFrame()
+    try:
+        df_exp1 = successful_runs(read_experiment(results_dir, "exp1"), metric=metric)
+    except Exception:
+        pass
+
+    # Aggregate metric grouped by modality, algorithm, and flip rate
+    curve = (
+        df.groupby(["modality", "algorithm_name", "label_flip_rate"], as_index=False)[metric]
+        .mean()
+        .dropna(subset=["label_flip_rate", metric])
+    )
+    
+    # We want to plot one comparison chart per modality
+    for modality, part in curve.groupby("modality"):
+        fig, ax = plt.subplots(figsize=(8, 5.5))
+        
+        # Highly distinctive aesthetic color scheme for the supervised & defended lines
+        color_map = {
+            "Standard_LightGBM": "#d62728",              # Solid Red (Undefended danger)
+            "Defended_LightGBM_IForest_Trim": "#2ca02c",  # Solid Green (Defended success)
+            "Defended_LightGBM_IForest_Flip": "#8c564b",  # Solid Brown
+            "Standard_XGBoost": "#ff7f0e",               # Solid Orange (Undefended danger)
+            "Defended_XGBoost_IForest_Trim": "#1f77b4",   # Solid Blue (Defended success)
+            "Defended_XGBoost_IForest_Flip": "#bcbd22",   # Solid Olive
+        }
+        
+        # Filter part to only contain the key models to keep the PNG extremely neat
+        part = part[part["algorithm_name"].isin(color_map.keys())]
+        if part.empty:
+            plt.close(fig)
+            continue
+        
+        for algo, g in part.groupby("algorithm_name"):
+            g = g.sort_values("label_flip_rate")
+            is_defended = "Defended" in algo
+            is_flip = "Flip" in algo
+            
+            ls = "-" if not is_flip else "--"
+            marker = "D" if is_defended else "o"
+            color = color_map.get(algo, None)
+            
+            ax.plot(g["label_flip_rate"] * 100, g[metric], marker=marker, linestyle=ls, linewidth=2.0, label=algo, color=color)
+            
+        # Draw standalone unsupervised baselines dynamically from Exp-1 as clean horizontal reference lines
+        if not df_exp1.empty:
+            baselines_spec = {
+                "IForest": ("#7f7f7f", "Baseline_IForest"),
+                "ECOD": ("#17becf", "Baseline_ECOD"),
+                "AutoEncoder": ("#e377c2", "Baseline_AutoEncoder"),
+            }
+            # Filter Exp-1 to the current modality and our selected baselines
+            mod_exp1 = df_exp1[(df_exp1["modality"] == modality) & (df_exp1["algorithm_name"].isin(baselines_spec.keys()))]
+            if not mod_exp1.empty:
+                mean_scores = mod_exp1.groupby("algorithm_name")[metric].mean()
+                for algo, score in mean_scores.items():
+                    color, label_name = baselines_spec[algo]
+                    ax.axhline(score, color=color, linestyle=":", linewidth=2.0, label=label_name)
+            
+        ax.set_title(f"Exp-4 Robust Defense Performance ({modality.upper()})")
+        ax.set_xlabel("Label flip contamination rate (%)")
+        ax.set_ylabel(metric)
+        ax.margins(y=0.08)
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8, loc="lower left")
+        outputs.append(_save(fig, out_dir / f"exp4_defense_comparison_{modality}.png"))
+        
+    return outputs
+
+
 def generate_all(results_dir: str | Path, figures_dir: str | Path, metric: str = "auc_roc") -> list[Path]:
     outputs = []
     outputs.extend(plot_exp1(results_dir, figures_dir, metric))
     outputs.extend(plot_exp2(results_dir, figures_dir, metric))
     outputs.extend(plot_exp3(results_dir, figures_dir, metric))
+    # outputs.extend(plot_exp4(results_dir, figures_dir, metric))
     outputs.extend(plot_error_analysis(results_dir, figures_dir, metric))
     return outputs
 
@@ -406,7 +588,7 @@ def main() -> None:
     parser.add_argument("--results-dir", default=str(ROOT / "results"))
     parser.add_argument("--figures-dir", default=str(ROOT / "figures"))
     parser.add_argument("--metric", default="auc_roc", choices=["auc_roc", "auc_pr", "f1_best"])
-    parser.add_argument("--section", default="all", choices=["all", "exp1", "exp2", "exp3", "error"])
+    parser.add_argument("--section", default="all", choices=["all", "exp1", "exp2", "exp3", "exp4", "error"])
     args = parser.parse_args()
 
     if args.section == "all":
@@ -417,6 +599,8 @@ def main() -> None:
         outputs = plot_exp2(args.results_dir, args.figures_dir, args.metric)
     elif args.section == "exp3":
         outputs = plot_exp3(args.results_dir, args.figures_dir, args.metric)
+    elif args.section == "exp4":
+        outputs = plot_exp4(args.results_dir, args.figures_dir, args.metric)
     else:
         outputs = plot_error_analysis(args.results_dir, args.figures_dir, args.metric)
 

@@ -19,6 +19,9 @@ from models.base import (
 # ---- 1 个自实现 ----
 from models.statistical import IQRDetector
 
+# ---- 1 个鲁棒防御器 ----
+from models.defense import RobustDefenseWrapper
+
 # ---- 6 个浅层 PyOD 包装 ----
 from models.lof import LOFDetector
 from models.knn import KNNDetector
@@ -63,6 +66,8 @@ __all__ = [
     "XGBoostDetector",
     "LightGBMDetector",
     "TabPFNDetector",
+    # 鲁棒防御器
+    "RobustDefenseWrapper",
 ]
 
 

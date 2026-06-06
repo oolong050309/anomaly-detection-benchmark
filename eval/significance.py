@@ -125,34 +125,52 @@ def plot_cd_diagram(ranks: pd.Series, cd: float, path: str | Path, title: str) -
 
     y_base = len(ranks)
     for idx, (algo, rank) in enumerate(ranks.items()):
-        y = y_base - idx
-        ax.plot(rank, y, "o", color="#4c78a8")
-        ax.hlines(y, rank, max_rank, color="#d0d0d0", linewidth=0.8)
-        ax.text(max_rank + 0.05, y, algo, va="center", ha="left", fontsize=8)
-        ax.text(rank, y + 0.18, f"{rank:.2f}", ha="center", fontsize=7)
+        # We drop the hlines completely and put everything on a single horizontal axis
+        pass
+        
+    # Redraw everything on a single 1D axis for the classic Nemenyi CD look
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.set_xlim(min_rank, max_rank)
+    ax.set_ylim(-1, 3)
+    ax.set_xlabel("Average rank (lower is better)")
+    ax.set_yticks([])
+    ax.set_title(title, pad=30)
+    ax.invert_xaxis()
+    
+    # Draw the main axis line
+    ax.hlines(0, min_rank, max_rank, color="black", linewidth=1.5)
+    ax.set_xticks(np.arange(min_rank, max_rank + 1))
+    
+    # Plot dots and labels
+    texts = []
+    # Alternate drawing labels above and below the axis line
+    for idx, (algo, rank) in enumerate(ranks.items()):
+        ax.plot(rank, 0, "o", color="#4c78a8", markersize=6, zorder=5)
+        # Alternate height: 0.2, -0.3, 0.4, -0.5 to prevent overlap
+        y_offset = (0.2 + (idx % 3) * 0.25) * (1 if idx % 2 == 0 else -1)
+        
+        # Draw a small vertical stem line
+        ax.vlines(rank, 0, y_offset, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
+        
+        # Place the text
+        val_str = f"{algo} ({rank:.2f})"
+        texts.append(ax.text(rank, y_offset + (0.1 if y_offset > 0 else -0.1), val_str, 
+                             va="center", ha="center", fontsize=8, weight="bold"))
 
-    # Critical difference ruler.
-    ruler_y = 0.2
+    try:
+        from adjustText import adjust_text
+        adjust_text(texts, arrowprops=dict(arrowstyle="-", color='gray', lw=0.5), expand_points=(1.5, 1.5))
+    except ImportError:
+        pass
+
+    # Critical difference ruler at top
+    ruler_y = 2.0
     start = min_rank
     end = min(start + cd, max_rank)
-    ax.hlines(ruler_y, start, end, color="black", linewidth=2)
-    ax.vlines([start, end], ruler_y - 0.12, ruler_y + 0.12, color="black", linewidth=1)
-    ax.text((start + end) / 2, ruler_y - 0.45, f"CD={cd:.2f}", ha="center", fontsize=9)
+    ax.hlines(ruler_y, start, end, color="#e45756", linewidth=3)
+    ax.vlines([start, end], ruler_y - 0.2, ruler_y + 0.2, color="#e45756", linewidth=2)
+    ax.text((start + end) / 2, ruler_y + 0.3, f"CD={cd:.2f}", ha="center", fontsize=10, weight="bold", color="#e45756")
 
-    # Draw short bars for adjacent algorithms that are not significantly different.
-    group_y = len(ranks) + 1.0
-    values = ranks.to_numpy()
-    names = list(ranks.index)
-    used = 0
-    for i in range(len(values)):
-        j = i
-        while j + 1 < len(values) and abs(values[j + 1] - values[i]) <= cd:
-            j += 1
-        if j > i:
-            y = group_y - 0.22 * used
-            ax.hlines(y, values[i], values[j], color="#e45756", linewidth=2)
-            ax.text((values[i] + values[j]) / 2, y + 0.08, "not significant", ha="center", fontsize=7, color="#e45756")
-            used += 1
     fig.savefig(out, dpi=220, bbox_inches="tight")
     fig.savefig(out.with_suffix(".svg"), bbox_inches="tight")
     plt.close(fig)

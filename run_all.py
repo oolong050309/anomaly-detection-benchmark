@@ -22,6 +22,7 @@ EXPERIMENT_MODULES = {
     "exp1": "experiments.exp1_baseline",
     "exp2": "experiments.exp2_contamination",
     "exp3": "experiments.exp3_cross_modal",
+    "exp4": "experiments.exp4_defense",
 }
 
 
@@ -35,7 +36,7 @@ def _run_module(module: str, extra_args: list[str]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run anomaly detection benchmark experiments")
-    parser.add_argument("--exp", choices=["exp1", "exp2", "exp3", "all"], default="all")
+    parser.add_argument("--exp", choices=["exp1", "exp2", "exp3", "exp4", "all"], default="all")
     parser.add_argument("--data-root", default=None,
                         help="Server data root. Defaults to AD_DATA_ROOT or ./data inside adapters.")
     parser.add_argument("--output-dir", default=str(ROOT / "results"),
@@ -49,7 +50,7 @@ def main() -> None:
                         default=None, help="Exp-2/Exp-3 modality filter.")
     args = parser.parse_args()
 
-    selected = ["exp1", "exp2", "exp3"] if args.exp == "all" else [args.exp]
+    selected = ["exp1", "exp2", "exp3", "exp4"] if args.exp == "all" else [args.exp]
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -81,6 +82,8 @@ def main() -> None:
                     raise ValueError("Exp-2 only supports modalities: tabular, timeseries, graph")
                 extra.extend(["--modalities", *exp2_modalities])
             if exp == "exp3" and args.modalities:
+                extra.extend(["--modalities", *args.modalities])
+            if exp == "exp4" and args.modalities:
                 extra.extend(["--modalities", *args.modalities])
             _run_module(EXPERIMENT_MODULES[exp], extra)
 

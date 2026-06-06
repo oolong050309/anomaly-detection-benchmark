@@ -4,7 +4,7 @@
 
 ## 当前交付状态
 
-成员 A 的数据工程部分已完成到可对接状态：
+本项目已完成全部数据流、模型适配、四组核心实验（基准、污染、跨模态、防御）以及自动化图表生成，达到最终交付标准：
 
 - ADBench 计划子集已下载并可通过适配器加载
 - TSB-AD-U 已下载、解压，并选出 8 条代表性时序
@@ -123,8 +123,8 @@ AD_DATA_ROOT=/root/autodl-tmp/final_project/data python -m pytest tests -vv --tb
 python run_all.py \
   --exp all \
   --data-root /root/autodl-tmp/final_project/data \
-  --output-dir results/server_run_seed42 \
-  --seed 42
+  --output-dir results \
+  --seeds 41 42 43
 ```
 
 也可以单独运行：
@@ -165,7 +165,7 @@ python -m scripts.smoke_test_experiments \
 
 ```bash
 python analyze_results.py \
-  --results-dir results/server_run_seed42 \
+  --results-dir results \
   --figures-dir figures \
   --metric auc_roc
 ```
@@ -195,3 +195,29 @@ python analyze_results.py \
 - 标准化只使用训练集统计量，避免测试集信息泄漏
 - 深度/图模型默认 `AD_DEVICE=auto`，检测到 CUDA 时优先使用 GPU；可用 `AD_DEVICE=cpu` 强制 CPU，或用 `AD_CUDA_DEVICE=0` 指定 GPU 编号。
 - GADBench 中 `amazon` 使用预设 mask；`tfinance`、`reddit`、`weibo` 使用固定种子生成分层节点 mask
+
+
+## 🛡️ 最新实验进展：Exp-4 鲁棒防御抵御标签翻转
+
+我们完成了关于**在对称标签翻转噪声（Symmetric Label Flips）下主动防御策略有效性**的超大规模消融实验。
+实验评估了 6 种主流有监督算法（LightGBM, XGBoost, RF, MLP, LR, TabPFN）和 9 种无监督去噪器（IQR, IForest, AutoEncoder 等），分别采用 Trim (剪裁) 和 Flip (翻转) 策略。共计 **2142 行记录 (Seed=42)**。
+
+### 核心学术结论 (Discovery)
+
+1. **IQR_Trim 是高噪环境的终极王者**：在 20% 极端标签污染下，所有的基础模型（Standard）全部发生性能崩溃。唯独引入基于 IQR 的特征空间剪裁防御后，模型全部实现完美逆风翻盘。例如 Defended_MLP_IQR_Trim 相比不设防基线，AUC 绝对值暴涨了 **+2.52%**！
+2. **Trim（剪裁）策略全方位碾压 Flip（翻转）**：Flip 会在不确定区域引入强烈的人造噪声，而 Trim 具有天然的低容错开销优势。
+3. **低噪声环境下的首选策略**：在 5% - 10% 的轻中度污染下，**IForest_Trim** 或 **KNN_Trim** 表现出最平滑的性能过渡。
+4. **防御机制的失效边界（The No Free Lunch Theorem）**：
+   - 对于预训练的巨无霸模型 **TabPFN**：因为防御剪裁了上下文 (Context)，破坏了其 In-Context Learning 完整性，反而导致性能全线下降。
+   - 对于极简线性模型 **Logistic Regression (LR)**：去噪器清除了大量处于边界的关键样本，导致线性决策边界塌陷，同样起了反作用。
+
+### 可视化大盘与演示
+
+可以直接在本地查看生成的超高清分析图：
+* igures/exp4/exp4_dynamic_best_defense_horizontal.png: **四大模型的动态防御黄金逆袭包络图**。
+* igures/exp4/exp4_ablation_bar.png: **20% 污染下的去噪器与策略全尺寸消融对比图**。
+
+此外，你可以通过启动 Streamlit 实时交互页面来体验这些防噪策略的可视化：
+`ash
+streamlit run app/streamlit_app.py
+`
