@@ -36,6 +36,35 @@ Exp1 评估各算法在干净标注下的性能上限。我们汇总了各算法
     \item \textbf{模态专用模型在结构化数据上不可或缺}。在图与时序模态，通用算法让位于专用模型——图模态由 XGBGraph（0.902）、BWGNN（0.892）、GCN（0.884）领先，时序模态由 MiniRocket（0.809）领先。值得注意的是，时序最优 AUC 仅约 0.81，远低于表格的 0.97，预示该模态的高难度（详见 Exp3）。
 \end{enumerate}
 
+各算法的平均秩、平均 AUC-ROC 与平均 AUC-PR 汇总于~\ref{tab:exp1-friedman}。值得注意的是，AUC-PR 维度上监督与无监督的差距（监督 0.69--0.77，无监督 0.16--0.32）远大于 AUC-ROC 上的差距：无监督方法虽能给出合理的整体排序，却在少数类的精确召回上明显不足。此外，AUC-ROC 在极端不平衡数据上存在乐观偏置——例如在 credit\_card（异常率 0.17\%）上监督模型平均 AUC-ROC 达 0.962，而 AUC-PR 仅 0.810，这说明在不平衡场景下需并用两类指标方能客观评估。
+
+\begin{table}[!t]
+  \caption{Exp1 通用算法的 Friedman 平均秩与平均 AUC-ROC / AUC-PR（秩越小越优）}\label{tab:exp1-friedman}
+  \centering
+  \small
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lccc@{}}
+    \toprule
+    \textbf{算法} & \textbf{平均秩} & \textbf{AUC-ROC} & \textbf{AUC-PR} \\
+    \midrule
+    LightGBM    & 2.26  & 0.940 & 0.742 \\
+    XGBoost     & 2.82  & 0.940 & 0.737 \\
+    MLP         & 3.12  & 0.944 & 0.770 \\
+    RF          & 3.50  & 0.927 & 0.693 \\
+    LR          & 3.94  & 0.932 & 0.730 \\
+    \midrule
+    AutoEncoder & 8.41  & 0.764 & 0.258 \\
+    KNN         & 8.41  & 0.744 & 0.230 \\
+    IForest     & 9.12  & 0.767 & 0.315 \\
+    ECOD        & 10.06 & 0.747 & 0.308 \\
+    COPOD       & 10.53 & 0.747 & 0.288 \\
+    DeepSVDD    & 10.53 & 0.729 & 0.261 \\
+    IQR         & 10.53 & 0.731 & 0.262 \\
+    OCSVM       & 10.82 & 0.726 & 0.232 \\
+    LOF         & 10.94 & 0.636 & 0.164 \\
+    \bottomrule
+  \end{tabular*}
+\end{table}
+
 Nemenyi 检验的关键差值图（图~\ref{fig:exp1-cd}）进一步表明，监督算法与无监督算法之间的平均秩差超过临界差值（CD），差异具有统计显著性；而监督算法内部、以及多数无监督算法之间的秩差则落在 CD 之内，难以显著区分。图~\ref{fig:exp1-heatmap}的逐数据集 AUC-ROC 热力图直观印证了这一格局：监督算法（上部）在表格、CV、NLP 上整体呈现高值，而无监督算法的表现更依赖具体数据集。
 
 \begin{figure}[!t]

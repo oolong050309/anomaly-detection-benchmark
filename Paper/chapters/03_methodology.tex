@@ -46,6 +46,27 @@
     \item \textbf{标签纠正（Flip）}：保留全部样本，但将识别出的高风险样本标签翻转为 $1-\tilde{y}_i$。该路径不损失样本量，但高度依赖无监督检测器在决策边界附近的判别精度。
 \end{itemize}
 
+完整的去噪防御流程如~\ref{alg:defense}~所示。其关键在于：清洁器仅在特征 $X$ 上拟合（不接触标签），随后将无监督判定与给定标签相悖的样本视为可疑，再按所选策略剔除或纠正。整个包装器与下游分类器解耦，无需修改其训练目标。
+
+\begin{algorithm}[!t]
+  \caption{主动去噪防御包装器}\label{alg:defense}
+  \begin{algorithmic}[1]
+    \Require 含噪训练集 $\mathcal{D}_{\text{dirty}}=\{(x_i,\tilde{y}_i)\}_{i=1}^N$；无监督清洁器 $f_{\text{unsup}}$；去噪比例 $\rho$；策略 $\textsc{Strat}\in\{\textsc{Trim},\textsc{Flip}\}$；下游分类器 $\mathcal{C}$
+    \Ensure 鲁棒分类器 $\mathcal{C}^\star$
+    \State 在特征 $\{x_i\}_{i=1}^N$ 上拟合 $f_{\text{unsup}}$ \Comment{不使用标签}
+    \State $s_i \gets f_{\text{unsup}}(x_i),\ i=1,\dots,N$ \Comment{无监督异常得分}
+    \State $\hat{y}_i \gets \mathbb{1}[\,s_i \ge \tau_\rho\,]$ \Comment{以 $\rho$ 分位阈值 $\tau_\rho$ 判定}
+    \State $\mathcal{S} \gets \{\,i : \hat{y}_i \neq \tilde{y}_i\,\}$ \Comment{标签与判定相悖的可疑样本}
+    \If{$\textsc{Strat}=\textsc{Trim}$}
+      \State $\mathcal{D}_{\text{clean}} \gets \{(x_i,\tilde{y}_i) : i\notin\mathcal{S}\}$ \Comment{剔除}
+    \Else
+      \State $\mathcal{D}_{\text{clean}} \gets \{(x_i,\,\tilde{y}_i \oplus \mathbb{1}[i\in\mathcal{S}])\}_{i=1}^N$ \Comment{纠正}
+    \EndIf
+    \State $\mathcal{C}^\star \gets \textsc{Train}(\mathcal{C},\,\mathcal{D}_{\text{clean}})$
+    \State \Return $\mathcal{C}^\star$
+  \end{algorithmic}
+\end{algorithm}
+
 \subsection{典型无监督清洁器}
 本文在 Exp4 中消融了 9 种无监督清洁器 \cite{zhao2019pyod}。下面给出表现最具代表性的三种的数学机制。
 
