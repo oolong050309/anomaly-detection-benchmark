@@ -1,11 +1,11 @@
 \chapter{方法与系统架构}\label{chap:methodology}
 
-本节阐述本文设计的统一抗污染评测基准与主动去噪防御体系。整个系统由五个阶段串联而成：多模态输入与特征对齐、对称标签污染注入、主动去噪防御（样本剪裁与标签纠正双路径）、下游检测算法评估，以及多指标度量与失效边界界定。端到端架构如~\ref{fig:system-architecture}~所示。
+本节阐述本文设计的统一抗污染评测基准与主动去噪防御体系。整个系统由五个阶段串联而成：多模态输入与特征对齐、对称标签污染注入、主动去噪防御（样本剪裁与标签纠正双路径）、下游检测算法评估，以及多指标度量与失效边界界定。端到端数据流与评测闭环如~\ref{fig:system-architecture}~所示。
 
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{figures/pipeline_v2.png}
-  \caption{统一跨模态抗污染异常检测评测与主动去噪防御系统的整体架构}\label{fig:system-architecture}
+  \caption{统一跨模态抗污染异常检测基准的数据流与评测闭环}\label{fig:system-architecture}
 \end{figure*}
 
 \section{统一跨模态数据管道}
@@ -67,7 +67,7 @@
   \end{algorithmic}
 \end{algorithm}
 
-图~\ref{fig:trim-flip}~以二维特征空间示意了两种策略的差异：剪裁直接剔除标签与特征相悖的可疑样本，使决策边界恢复洁净；而纠正在翻转标签时，一旦无监督检测器在边界附近误判，便会引入二次噪声并使边界偏斜。这从几何上解释了 Exp4 中 Trim 全面优于 Flip 的现象。
+图~\ref{fig:trim-flip}~以二维特征空间并列示意了两种策略的差异：二者都从同一含噪训练集出发，剪裁直接剔除标签与特征相悖的可疑样本，使决策边界恢复洁净；而纠正在翻转标签时，一旦无监督检测器在边界附近误判，便会引入二次噪声并使边界偏斜。这从几何上解释了 Exp4 中 Trim 全面优于 Flip 的现象。
 
 \begin{figure*}[!t]
   \centering

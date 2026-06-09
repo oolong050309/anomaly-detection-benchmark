@@ -1,107 +1,120 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 372" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 420" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, Helvetica, Arial, sans-serif">
   <defs>
     <marker id="tf-ar" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L7,3 L0,6 Z" fill="#475569"/>
     </marker>
   </defs>
   <style>
-    .ttl  { font-size:13px; font-weight:700; fill:#ffffff; }
+    .ttl  { font-size:12.5px; font-weight:700; fill:#ffffff; }
     .cap  { font-size:10.5px; fill:#475569; }
     .lg   { font-size:11px; fill:#334155; }
     .note { font-size:10px; font-weight:600; }
-    .bd   { fill:none; stroke:#334155; stroke-width:2.2; }
+    .bd   { fill:none; stroke:#334155; stroke-width:2.1; }
     .plot { fill:#f8fafc; stroke:#e2e8f0; stroke-width:1; }
+    .block-title { font-size:14px; font-weight:800; }
   </style>
 
   <!-- ===== legend ===== -->
   <g class="lg">
-    <circle cx="300" cy="14" r="5.5" fill="#2563eb"/><text x="312" y="18">标注正常</text>
-    <polygon points="392,9 386,21 398,21" fill="#dc2626"/><text x="404" y="18">标注异常</text>
-    <circle cx="486" cy="14" r="7.5" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/><text x="498" y="18">可疑样本</text>
-    <text x="600" y="18" fill="#94a3b8">✕ 已剔除</text>
-    <line x1="690" y1="14" x2="716" y2="14" class="bd"/><text x="722" y="18">决策边界</text>
+    <circle cx="302" cy="18" r="5.5" fill="#2563eb"/><text x="314" y="22">标注正常</text>
+    <polygon points="405,13 399,25 411,25" fill="#dc2626"/><text x="417" y="22">标注异常</text>
+    <circle cx="506" cy="18" r="7.5" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/><text x="518" y="22">可疑样本</text>
+    <text x="620" y="22" fill="#94a3b8">✕ 已剔除</text>
+    <line x1="710" y1="18" x2="736" y2="18" class="bd"/><text x="742" y="22">决策边界</text>
   </g>
 
-  <!-- ============ PANEL (a) 含噪训练集 ============ -->
-  <g transform="translate(30,0)">
-    <rect class="plot" x="0" y="34" width="320" height="284" rx="8"/>
-    <rect x="0" y="34" width="320" height="28" rx="8" fill="#334155"/>
-    <text x="160" y="53" text-anchor="middle" class="ttl">(a) 含噪训练集</text>
-    <!-- distorted boundary -->
-    <path class="bd" d="M188,74 C 252,108 250,150 198,176 C 150,200 96,236 104,270 L 110,312"/>
-    <!-- normal circles -->
-    <g fill="#2563eb">
-      <circle cx="62" cy="250" r="5.5"/><circle cx="92" cy="226" r="5.5"/><circle cx="120" cy="264" r="5.5"/>
-      <circle cx="80" cy="292" r="5.5"/><circle cx="130" cy="240" r="5.5"/><circle cx="100" cy="206" r="5.5"/><circle cx="152" cy="280" r="5.5"/>
-    </g>
-    <!-- anomaly triangles -->
-    <g fill="#dc2626">
-      <polygon points="215,119 209,131 221,131"/><polygon points="248,144 242,156 254,156"/>
-      <polygon points="228,94 222,106 234,106"/><polygon points="265,116 259,128 271,128"/><polygon points="206,156 200,168 212,168"/>
-    </g>
-    <!-- M3 near-boundary normal -->
-    <circle cx="162" cy="202" r="5.5" fill="#2563eb"/>
-    <!-- suspicious M1 (red tri in normal region) -->
-    <polygon points="108,242 102,254 114,254" fill="#dc2626"/>
-    <circle cx="108" cy="248" r="10" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/>
-    <!-- suspicious M2 (blue circle in anomaly region) -->
-    <circle cx="235" cy="128" r="5.5" fill="#2563eb"/>
-    <circle cx="235" cy="128" r="10" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/>
-    <text x="160" y="338" text-anchor="middle" class="cap">边界被翻转标签扭曲（过拟合噪声）</text>
-  </g>
+  <!-- ===================== Trim subfigure ===================== -->
+  <text x="280" y="54" text-anchor="middle" class="block-title" fill="#0e7490">Trim：删除可疑样本</text>
 
-  <!-- ============ PANEL (b) Trim ============ -->
-  <g transform="translate(380,0)">
-    <rect class="plot" x="0" y="34" width="320" height="284" rx="8"/>
-    <rect x="0" y="34" width="320" height="28" rx="8" fill="#0e7490"/>
-    <text x="160" y="53" text-anchor="middle" class="ttl">(b) Trim 剪裁（本文最优）</text>
-    <!-- clean straight boundary -->
-    <line class="bd" x1="178" y1="74" x2="178" y2="312"/>
+  <g transform="translate(30,70)">
+    <rect class="plot" x="0" y="0" width="230" height="260" rx="8"/>
+    <rect x="0" y="0" width="230" height="26" rx="8" fill="#334155"/>
+    <text x="115" y="18" text-anchor="middle" class="ttl">含噪训练集</text>
+    <path class="bd" d="M135,47 C 190,78 188,114 145,138 C 110,158 72,194 76,224 L 80,248"/>
     <g fill="#2563eb">
-      <circle cx="62" cy="250" r="5.5"/><circle cx="92" cy="226" r="5.5"/><circle cx="120" cy="264" r="5.5"/>
-      <circle cx="80" cy="292" r="5.5"/><circle cx="130" cy="240" r="5.5"/><circle cx="100" cy="206" r="5.5"/><circle cx="152" cy="280" r="5.5"/>
+      <circle cx="52" cy="205" r="5.5"/><circle cx="70" cy="180" r="5.5"/><circle cx="96" cy="214" r="5.5"/>
+      <circle cx="62" cy="238" r="5.5"/><circle cx="104" cy="196" r="5.5"/><circle cx="84" cy="168" r="5.5"/><circle cx="132" cy="230" r="5.5"/>
     </g>
     <g fill="#dc2626">
-      <polygon points="215,119 209,131 221,131"/><polygon points="248,144 242,156 254,156"/>
-      <polygon points="228,94 222,106 234,106"/><polygon points="265,116 259,128 271,128"/><polygon points="206,156 200,168 212,168"/>
+      <polygon points="157,89 151,101 163,101"/><polygon points="185,112 179,124 191,124"/>
+      <polygon points="170,66 164,78 176,78"/><polygon points="204,92 198,104 210,104"/><polygon points="148,132 142,144 154,144"/>
     </g>
-    <circle cx="162" cy="202" r="5.5" fill="#2563eb"/>
-    <!-- removed M1, M2 -->
-    <text x="108" y="252" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="700">✕</text>
-    <circle cx="108" cy="248" r="10" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,2"/>
-    <text x="235" y="132" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="700">✕</text>
-    <circle cx="235" cy="128" r="10" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,2"/>
-    <text x="288" y="86" text-anchor="middle" class="note" fill="#0e7490">✓</text>
-    <text x="160" y="338" text-anchor="middle" class="cap">剔除可疑样本，边界恢复洁净</text>
+    <circle cx="141" cy="166" r="5.5" fill="#2563eb"/>
+    <polygon points="82,204 76,216 88,216" fill="#dc2626"/>
+    <circle cx="82" cy="210" r="10" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/>
+    <circle cx="178" cy="99" r="5.5" fill="#2563eb"/>
+    <circle cx="178" cy="99" r="10" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/>
   </g>
 
-  <!-- ============ PANEL (c) Flip ============ -->
-  <g transform="translate(730,0)">
-    <rect class="plot" x="0" y="34" width="320" height="284" rx="8"/>
-    <rect x="0" y="34" width="320" height="28" rx="8" fill="#b45309"/>
-    <text x="160" y="53" text-anchor="middle" class="ttl">(c) Flip 纠正</text>
-    <!-- boundary bows LEFT to enclose the mis-flipped red point on the anomaly side -->
-    <path class="bd" d="M178,74 C 178,150 148,180 148,205 C 148,230 178,255 178,312"/>
+  <line x1="272" y1="200" x2="302" y2="200" stroke="#475569" stroke-width="2.1" marker-end="url(#tf-ar)"/>
+  <text x="287" y="189" text-anchor="middle" class="cap" fill="#0e7490">Trim</text>
+
+  <g transform="translate(310,70)">
+    <rect class="plot" x="0" y="0" width="230" height="260" rx="8"/>
+    <rect x="0" y="0" width="230" height="26" rx="8" fill="#0e7490"/>
+    <text x="115" y="18" text-anchor="middle" class="ttl">剪裁后训练集</text>
+    <line class="bd" x1="129" y1="47" x2="129" y2="248"/>
     <g fill="#2563eb">
-      <circle cx="62" cy="250" r="5.5"/><circle cx="92" cy="226" r="5.5"/><circle cx="120" cy="264" r="5.5"/>
-      <circle cx="80" cy="292" r="5.5"/><circle cx="130" cy="240" r="5.5"/><circle cx="100" cy="206" r="5.5"/><circle cx="152" cy="280" r="5.5"/>
+      <circle cx="52" cy="205" r="5.5"/><circle cx="70" cy="180" r="5.5"/><circle cx="96" cy="214" r="5.5"/>
+      <circle cx="62" cy="238" r="5.5"/><circle cx="104" cy="196" r="5.5"/><circle cx="84" cy="168" r="5.5"/><circle cx="132" cy="230" r="5.5"/>
     </g>
     <g fill="#dc2626">
-      <polygon points="215,119 209,131 221,131"/><polygon points="248,144 242,156 254,156"/>
-      <polygon points="228,94 222,106 234,106"/><polygon points="265,116 259,128 271,128"/><polygon points="206,156 200,168 212,168"/>
+      <polygon points="157,89 151,101 163,101"/><polygon points="185,112 179,124 191,124"/>
+      <polygon points="170,66 164,78 176,78"/><polygon points="204,92 198,104 210,104"/><polygon points="148,132 142,144 154,144"/>
     </g>
-    <!-- M1 corrected -> blue circle -->
-    <circle cx="108" cy="248" r="5.5" fill="#2563eb"/>
-    <!-- M2 corrected -> red triangle -->
-    <polygon points="235,122 229,134 241,134" fill="#dc2626"/>
-    <!-- M3 wrongly flipped -> red triangle near boundary on normal side -->
-    <polygon points="162,196 156,208 168,208" fill="#dc2626"/>
-    <circle cx="162" cy="202" r="10" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="3,2"/>
-    <text x="178" y="186" class="note" fill="#b45309">误翻</text>
-    <text x="160" y="338" text-anchor="middle" class="cap">边界处误翻引入二次噪声，边界偏斜</text>
+    <circle cx="141" cy="166" r="5.5" fill="#2563eb"/>
+    <text x="82" y="214" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="700">✕</text>
+    <circle cx="82" cy="210" r="10" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="178" y="103" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="700">✕</text>
+    <circle cx="178" cy="99" r="10" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="206" y="58" text-anchor="middle" class="note" fill="#0e7490">✓</text>
+  </g>
+  <text x="280" y="356" text-anchor="middle" class="cap">剔除标签与特征相悖的可疑样本，边界恢复洁净</text>
+
+  <!-- ===================== Flip subfigure ===================== -->
+  <text x="800" y="54" text-anchor="middle" class="block-title" fill="#b45309">Flip：翻转可疑标签</text>
+
+  <g transform="translate(570,70)">
+    <rect class="plot" x="0" y="0" width="230" height="260" rx="8"/>
+    <rect x="0" y="0" width="230" height="26" rx="8" fill="#334155"/>
+    <text x="115" y="18" text-anchor="middle" class="ttl">含噪训练集</text>
+    <path class="bd" d="M135,47 C 190,78 188,114 145,138 C 110,158 72,194 76,224 L 80,248"/>
+    <g fill="#2563eb">
+      <circle cx="52" cy="205" r="5.5"/><circle cx="70" cy="180" r="5.5"/><circle cx="96" cy="214" r="5.5"/>
+      <circle cx="62" cy="238" r="5.5"/><circle cx="104" cy="196" r="5.5"/><circle cx="84" cy="168" r="5.5"/><circle cx="132" cy="230" r="5.5"/>
+    </g>
+    <g fill="#dc2626">
+      <polygon points="157,89 151,101 163,101"/><polygon points="185,112 179,124 191,124"/>
+      <polygon points="170,66 164,78 176,78"/><polygon points="204,92 198,104 210,104"/><polygon points="148,132 142,144 154,144"/>
+    </g>
+    <circle cx="141" cy="166" r="5.5" fill="#2563eb"/>
+    <polygon points="82,204 76,216 88,216" fill="#dc2626"/>
+    <circle cx="82" cy="210" r="10" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/>
+    <circle cx="178" cy="99" r="5.5" fill="#2563eb"/>
+    <circle cx="178" cy="99" r="10" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,2"/>
   </g>
 
-  <!-- flow arrows between panels -->
-  <line x1="352" y1="176" x2="378" y2="176" stroke="#475569" stroke-width="2" marker-end="url(#tf-ar)"/>
-  <line x1="702" y1="176" x2="728" y2="176" stroke="#475569" stroke-width="2" marker-end="url(#tf-ar)"/>
+  <line x1="812" y1="200" x2="842" y2="200" stroke="#475569" stroke-width="2.1" marker-end="url(#tf-ar)"/>
+  <text x="827" y="189" text-anchor="middle" class="cap" fill="#b45309">Flip</text>
+
+  <g transform="translate(850,70)">
+    <rect class="plot" x="0" y="0" width="230" height="260" rx="8"/>
+    <rect x="0" y="0" width="230" height="26" rx="8" fill="#b45309"/>
+    <text x="115" y="18" text-anchor="middle" class="ttl">纠正后训练集</text>
+    <path class="bd" d="M129,47 C 129,110 102,137 104,160 C 106,187 129,212 129,248"/>
+    <g fill="#2563eb">
+      <circle cx="52" cy="205" r="5.5"/><circle cx="70" cy="180" r="5.5"/><circle cx="96" cy="214" r="5.5"/>
+      <circle cx="62" cy="238" r="5.5"/><circle cx="104" cy="196" r="5.5"/><circle cx="84" cy="168" r="5.5"/><circle cx="132" cy="230" r="5.5"/>
+    </g>
+    <g fill="#dc2626">
+      <polygon points="157,89 151,101 163,101"/><polygon points="185,112 179,124 191,124"/>
+      <polygon points="170,66 164,78 176,78"/><polygon points="204,92 198,104 210,104"/><polygon points="148,132 142,144 154,144"/>
+    </g>
+    <circle cx="82" cy="210" r="5.5" fill="#2563eb"/>
+    <polygon points="178,93 172,105 184,105" fill="#dc2626"/>
+    <polygon points="112,154 106,166 118,166" fill="#dc2626"/>
+    <circle cx="112" cy="160" r="10" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="3,2"/>
+    <text x="132" y="148" class="note" fill="#b45309">误翻</text>
+  </g>
+  <text x="800" y="356" text-anchor="middle" class="cap">翻转保留全部样本；边界附近误判会引入二次噪声并使边界偏斜</text>
 </svg>

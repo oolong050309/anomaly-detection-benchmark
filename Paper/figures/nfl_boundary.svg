@@ -70,7 +70,8 @@
   <!-- region labels -->
   <text x="600" y="108" text-anchor="end" class="reg" fill="#047857">受益区</text>
   <text x="600" y="124" text-anchor="end" class="sub" fill="#059669">高容量监督模型：剔除噪声→边界更纯净</text>
-  <text x="392" y="232" class="reg" fill="#b91c1c">失效区（No Free Lunch）</text>
+  <text x="82" y="244" class="reg" fill="#b91c1c">失效区</text>
+  <text x="82" y="260" class="sub" fill="#b91c1c">No Free Lunch：模型相关负迁移</text>
 
   <!-- mechanism notes -->
   <line x1="64" y1="344" x2="664" y2="344" stroke="#e2e8f0" stroke-width="1"/>
