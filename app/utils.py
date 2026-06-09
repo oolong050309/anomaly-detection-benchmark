@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
-from sklearn.decomposition import PCA
 from sklearn.metrics import RocCurveDisplay, auc, roc_curve
 
 from eval.analysis_utils import (
@@ -472,18 +471,61 @@ def dataset_data_dir_hint(modality: str, data_root: Path) -> str:
     return f"`{modality_data_dir(modality, data_root)}`"
 
 
+def resolve_raw_dataset_path(name: str, modality: str, data_root: Path) -> Path | None:
+    """定位原始数据文件路径；不存在或无法解析时返回 None。"""
+    mod = str(modality).lower()
+    root = Path(data_root).expanduser()
+    try:
+        if mod in {"tabular", "cv", "nlp", "adbench"}:
+            from adapters.adbench_adapter import get_adbench_file
+
+            return get_adbench_file(name, root)
+        if mod in {"timeseries", "ts", "tsb-ad", "tsb"}:
+            from adapters.timeseries_adapter import resolve_tsb_file
+
+            return resolve_tsb_file(name, root)
+        if mod in {"graph", "gadbench"}:
+            from adapters.graph_adapter import resolve_graph_file
+
+            return resolve_graph_file(name, root)
+    except (KeyError, FileNotFoundError, ValueError):
+        return None
+    return None
+
+
+def dataset_load_cache_token(name: str, modality: str, data_root: str | Path) -> str:
+    """供 Streamlit 缓存失效：路径 + 修改时间 + 大小（文件就位后自动刷新）。"""
+    path = resolve_raw_dataset_path(name, modality, Path(data_root))
+    if path is None or not path.exists():
+        return f"missing:{name}|{modality}|{Path(data_root).resolve()}"
+    stat = path.stat()
+    return f"{path.resolve()}|{stat.st_mtime_ns}|{stat.st_size}"
+
+
+def clear_dataset_load_cache() -> None:
+    """清除数据集浏览页的加载缓存（下载新文件或修改 data_root 后调用）。"""
+    _load_dataset_for_viz.clear()
+
+
 def dataset_load_user_message(modality: str, data_root: Path) -> str:
     """无原始数据时，数据集浏览页的友好提示（对应测试指南 D-06）。"""
     mod_label = MODALITY_LABELS.get(modality, modality)
     target = dataset_data_dir_hint(modality, data_root)
     graph_hint = (
         f"原始图文件请放入 {target}（文件名见 `data/selected_files.json`）。"
-        "就位后可对**节点特征**做 PCA。"
+        "就位后可查看节点特征分布。"
     )
     if modality == "graph":
-        return f"`{data_root}` 下尚未就位图数据，无法绘制节点特征 PCA。{graph_hint}"
+        return f"`{data_root}` 下尚未就位图数据，无法绘制节点特征分布。{graph_hint}"
+    if modality == "timeseries":
+        return (
+            f"`{data_root}` 下尚未就位 {mod_label} 原始文件，无法绘制特征分布。"
+            f"请将 TSB-AD `.csv` 放入 {target}（清单见 `data/selected_files.json`），"
+            "或点击下方「下载 TSB-AD 演示文件」（首次约 70MB，解压单条 CSV）。"
+            "侧边栏可修改数据根目录；**重启 Streamlit 不会自动下载数据**。"
+        )
     return (
-        f"`{data_root}` 下尚未就位 {mod_label} 原始文件，无法绘制特征分布 / PCA。"
+        f"`{data_root}` 下尚未就位 {mod_label} 原始文件，无法绘制特征分布。"
         f"请将 benchmark 文件放入 {target}（清单见 `data/selected_files.json`），"
         "或点击下方「下载 ADBench 演示文件」。"
         "侧边栏可修改数据根目录。"
@@ -511,6 +553,77 @@ def eda_detail_options(filtered: pd.DataFrame) -> pd.DataFrame:
 ADBENCH_DEMO_BASE = (
     "https://github.com/Minqi824/ADBench/raw/main/adbench/datasets"
 )
+TSB_AD_U_ZIP_URL = "https://www.thedatum.org/datasets/TSB-AD-U.zip"
+_DOWNLOAD_USER_AGENT = "Mozilla/5.0 (compatible; anomaly-detection-benchmark/1.0)"
+
+
+def resolve_tsb_csv_filename(name: str, data_root: Path) -> str | None:
+    """将时序短名或完整名映射为 selected_files.json 中的 CSV 文件名。"""
+    manifest = load_selected_manifest(data_root)
+    needle = str(name).strip()
+    if needle.lower().endswith(".csv"):
+        return needle
+    for csv_name in manifest.get("timeseries", []):
+        if needle == timeseries_short_name(csv_name) or needle in csv_name:
+            return csv_name
+    return None
+
+
+def _ensure_tsb_ad_u_zip(cache_path: Path) -> tuple[bool, str]:
+    """下载并缓存 TSB-AD-U.zip（约 70MB，仅首次需要）。"""
+    from urllib.error import URLError
+    from urllib.request import Request, urlopen
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    if cache_path.exists() and cache_path.stat().st_size > 1_000_000:
+        return True, str(cache_path)
+    try:
+        req = Request(TSB_AD_U_ZIP_URL, headers={"User-Agent": _DOWNLOAD_USER_AGENT})
+        with urlopen(req, timeout=600) as resp, cache_path.open("wb") as out:
+            while True:
+                chunk = resp.read(1024 * 1024)
+                if not chunk:
+                    break
+                out.write(chunk)
+    except (URLError, OSError) as exc:
+        if cache_path.exists():
+            cache_path.unlink(missing_ok=True)
+        return False, f"下载 TSB-AD-U.zip 失败：{exc}"
+    if not cache_path.exists() or cache_path.stat().st_size < 1_000_000:
+        return False, f"下载结果异常：{cache_path}"
+    return True, str(cache_path)
+
+
+def fetch_tsb_demo_file(name: str, data_root: Path) -> tuple[bool, str]:
+    """从 TSB-AD-U.zip 解压单条 CSV 到 `data/timeseries/`。"""
+    import zipfile
+
+    csv_name = resolve_tsb_csv_filename(name, data_root)
+    if not csv_name:
+        return False, f"未在 selected_files.json 中找到时序「{name}」"
+    dest_dir = modality_data_dir("timeseries", data_root)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / Path(csv_name).name
+    if dest.exists() and dest.stat().st_size > 0:
+        return True, f"已存在 {dest}"
+    cache = Path(data_root) / ".cache" / "TSB-AD-U.zip"
+    ok, msg = _ensure_tsb_ad_u_zip(cache)
+    if not ok:
+        return False, msg
+    try:
+        with zipfile.ZipFile(cache) as zf:
+            matches = [
+                m for m in zf.namelist()
+                if m.endswith(csv_name) or m.endswith(f"/{csv_name}")
+            ]
+            if not matches:
+                return False, f"ZIP 中未找到 {csv_name}，请检查 selected_files.json"
+            dest.write_bytes(zf.read(matches[0]))
+    except (OSError, zipfile.BadZipFile) as exc:
+        return False, f"解压失败：{exc}"
+    if not dest.exists() or dest.stat().st_size < 50:
+        return False, f"解压结果异常：{dest}"
+    return True, f"已保存至 {dest}（自 TSB-AD-U.zip 解压）"
 
 
 def fetch_adbench_demo_file(name: str, data_root: Path) -> tuple[bool, str]:
@@ -539,54 +652,20 @@ def fetch_adbench_demo_file(name: str, data_root: Path) -> tuple[bool, str]:
     return True, f"已保存至 {dest}"
 
 
-def subsample_for_pca(
-    X: np.ndarray,
-    y: np.ndarray,
-    *,
-    max_samples: int = 2500,
-    seed: int = 42,
-) -> tuple[np.ndarray, np.ndarray, bool]:
-    """大样本时随机抽样以加速 PCA。"""
-    arr = np.asarray(X, dtype=float)
-    labels = np.asarray(y).astype(int).reshape(-1)
-    if arr.shape[0] <= max_samples:
-        return arr, labels, False
-    rng = np.random.default_rng(seed)
-    idx = rng.choice(arr.shape[0], max_samples, replace=False)
-    return arr[idx], labels[idx], True
-
-
-def render_feature_pca_plots(
+def render_feature_plots(
     X_train: np.ndarray,
-    y_train: np.ndarray,
     *,
-    context: str = "训练集",
     max_hist_features: int = 6,
-    max_pca_samples: int = 2500,
     max_hist_dims: int = 512,
 ) -> None:
-    """在 Streamlit 中渲染特征直方图 + PCA（高维仅 PCA，大样本自动抽样）。"""
+    """在 Streamlit 中渲染训练集特征直方图。"""
     arr = np.asarray(X_train, dtype=float)
-    labels = np.asarray(y_train).astype(int).reshape(-1)
-    if arr.ndim != 2 or arr.shape[1] < 2:
-        st.info(f"当前数据形状 {arr.shape}，无法做 PCA 二维投影。")
+    if arr.ndim != 2 or arr.shape[1] < 1:
+        st.info(f"当前数据形状 {arr.shape}，无法绘制特征分布。")
         return
-
-    if arr.shape[1] <= max_hist_dims:
-        st.pyplot(plot_feature_distribution(arr, max_features=max_hist_features), clear_figure=True)
-    else:
-        st.caption(f"特征维度 {arr.shape[1]} 较高，跳过直方图，仅展示 PCA。")
-
-    pca_x, pca_y, sampled = subsample_for_pca(arr, labels, max_samples=max_pca_samples)
-    if sampled:
-        st.caption(f"样本数 {arr.shape[0]:,}，PCA 随机抽样 {pca_x.shape[0]:,} 点（seed=42）。")
-
-    title = f"PCA 2D projection ({context})"
-    pca_fig = plot_pca_scatter(pca_x, pca_y, title=title)
-    if pca_fig is None:
-        st.info("有效样本不足，无法绘制 PCA。")
-        return
-    st.pyplot(pca_fig, clear_figure=True)
+    if arr.shape[1] > max_hist_dims:
+        st.caption(f"特征维度 {arr.shape[1]} 较高，仅展示前 {max_hist_features} 维直方图。")
+    st.pyplot(plot_feature_distribution(arr, max_features=max_hist_features), clear_figure=True)
 
 
 def contamination_rate_column(df: pd.DataFrame) -> pd.Series:
@@ -786,42 +865,6 @@ def plot_feature_distribution(X: np.ndarray, max_features: int = 6) -> plt.Figur
         else:
             ax.axis("off")
     fig.suptitle("训练集特征分布（前若干维）", fontsize=12, y=1.02)
-    fig.tight_layout()
-    return fig
-
-
-def plot_pca_scatter(
-    X: np.ndarray,
-    y: np.ndarray,
-    *,
-    title: str = "PCA 2D projection (train)",
-) -> plt.Figure | None:
-    arr = np.asarray(X, dtype=float)
-    labels = np.asarray(y).astype(int).reshape(-1)
-    if arr.ndim != 2 or arr.shape[0] < 3 or arr.shape[1] < 2:
-        return None
-    finite_mask = np.all(np.isfinite(arr), axis=1)
-    arr = arr[finite_mask]
-    labels = labels[finite_mask]
-    if len(arr) < 3:
-        return None
-    n_components = min(2, arr.shape[1], arr.shape[0])
-    coords = PCA(n_components=n_components, random_state=42).fit_transform(arr)
-    fig, ax = plt.subplots(figsize=(6.5, 5))
-    for label, name, color in [(0, "normal", "#4c78a8"), (1, "anomaly", "#e45756")]:
-        mask = labels == label
-        if not np.any(mask):
-            continue
-        ax.scatter(
-            coords[mask, 0],
-            coords[mask, 1 if n_components > 1 else 0],
-            s=12, alpha=0.55, label=name, c=color,
-        )
-    ax.set_title(title)
-    ax.set_xlabel("PC1")
-    ax.set_ylabel("PC2" if n_components > 1 else "PC1")
-    ax.legend(frameon=False)
-    ax.grid(alpha=0.2)
     fig.tight_layout()
     return fig
 
@@ -1216,16 +1259,27 @@ def plot_exp4_ablation_bars(
 
 
 @st.cache_data(show_spinner=False)
-def try_load_dataset(name: str, modality: str, data_root: str) -> dict[str, Any] | None:
-    try:
-        from adapters import load_dataset
+def _load_dataset_for_viz(
+    name: str,
+    modality: str,
+    data_root: str,
+    _cache_token: str,
+) -> dict[str, Any]:
+    """仅缓存成功加载结果；失败抛异常以免「文件已就位仍显示缺失」。"""
+    from adapters import load_dataset
 
-        bundle = load_dataset(name, modality=modality, data_root=data_root)
-        X_train, _, y_train, _ = bundle.as_tuple()
-        return {
-            "X_train": np.asarray(X_train),
-            "y_train": np.asarray(y_train),
-            "metadata": bundle.metadata,
-        }
+    bundle = load_dataset(name, modality=modality, data_root=data_root)
+    X_train, _, y_train, _ = bundle.as_tuple()
+    return {
+        "X_train": np.asarray(X_train),
+        "y_train": np.asarray(y_train),
+        "metadata": bundle.metadata,
+    }
+
+
+def try_load_dataset(name: str, modality: str, data_root: str) -> dict[str, Any] | None:
+    token = dataset_load_cache_token(name, modality, data_root)
+    try:
+        return _load_dataset_for_viz(name, modality, data_root, token)
     except Exception as exc:
         return {"error": str(exc)}

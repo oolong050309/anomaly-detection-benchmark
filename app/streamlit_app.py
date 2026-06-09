@@ -43,6 +43,7 @@ from app.utils import (
     eda_field_float,
     eda_field_int,
     fetch_adbench_demo_file,
+    fetch_tsb_demo_file,
     default_data_root,
     default_figures_dir,
     default_results_dir,
@@ -61,7 +62,9 @@ from app.utils import (
     plot_metric_bars,
     plot_modality_heatmap,
     plot_radar,
-    render_feature_pca_plots,
+    render_feature_plots,
+    clear_dataset_load_cache,
+    resolve_raw_dataset_path,
     render_sidebar_metric_guide,
     pollution_mode_label,
     render_advanced_figure_gallery,
@@ -128,6 +131,10 @@ def _sidebar_config() -> None:
     st.session_state["selected_seeds"] = selected_seeds or available_seeds
     st.session_state["results_dir"] = results_dir
     st.session_state["figures_dir"] = figures_dir
+    data_root_key = str(data_root.expanduser().resolve())
+    if st.session_state.get("_data_root_key") not in (None, data_root_key):
+        clear_dataset_load_cache()
+    st.session_state["_data_root_key"] = data_root_key
     st.session_state["data_root"] = data_root
     st.session_state["eda_path"] = eda_path
 
@@ -259,9 +266,7 @@ def page_dataset_browser() -> None:
     if sort_col in detail_df.columns:
         detail_df = detail_df.sort_values(sort_col, ascending=ascending, na_position="last")
 
-    c_hist, c_pca = st.columns(2)
-    max_hist = c_hist.slider("直方图展示特征数", 3, 12, 6, key="ds_hist_n")
-    max_pca_n = c_pca.slider("PCA 最大抽样点数", 500, 5000, 2500, step=500, key="ds_pca_n")
+    max_hist = st.slider("直方图展示特征数", 3, 12, 6, key="ds_hist_n")
 
     selected_label = st.selectbox("查看详情", detail_df["_label"].tolist())
     row = detail_df[detail_df["_label"].eq(selected_label)].iloc[0]
@@ -276,26 +281,44 @@ def page_dataset_browser() -> None:
         st.json({"preprocessing": row["preprocessing"], "split": row.get("split"), "seed": row.get("seed")})
 
     modality = str(row.get("modality", "tabular"))
-    st.subheader("特征分布 / PCA")
+    st.subheader("特征分布")
     loaded = try_load_dataset(selected, modality, str(data_root))
     if loaded and "error" not in loaded:
         if modality == "graph":
-            st.caption("图数据：对训练集节点特征矩阵做 PCA。")
-        render_feature_pca_plots(
-            loaded["X_train"], loaded["y_train"], context="train",
-            max_hist_features=max_hist, max_pca_samples=max_pca_n,
-        )
+            st.caption("图数据：训练集节点特征矩阵直方图。")
+        render_feature_plots(loaded["X_train"], max_hist_features=max_hist)
     else:
-        st.info(dataset_load_user_message(modality, data_root))
-        if modality in {"tabular", "cv", "nlp"}:
-            if st.button("下载 ADBench 演示文件", key=f"fetch_{selected}_{modality}"):
-                ok, msg = fetch_adbench_demo_file(selected, data_root)
-                if ok:
-                    try_load_dataset.clear()
-                    st.success(msg)
-                    st.rerun()
-                else:
-                    st.error(msg)
+        err_msg = (loaded or {}).get("error", "")
+        raw_path = resolve_raw_dataset_path(selected, modality, data_root)
+        if raw_path is not None and raw_path.exists():
+            st.warning(
+                f"已找到本地文件 `{raw_path}`，但加载未成功。"
+                + (f"\n\n原因：{err_msg}" if err_msg else "")
+            )
+            if st.button("清除缓存并重新加载", key=f"reload_{selected}_{modality}"):
+                clear_dataset_load_cache()
+                st.rerun()
+        else:
+            st.info(dataset_load_user_message(modality, data_root))
+            if modality in {"tabular", "cv", "nlp"}:
+                if st.button("下载 ADBench 演示文件", key=f"fetch_{selected}_{modality}"):
+                    ok, msg = fetch_adbench_demo_file(selected, data_root)
+                    if ok:
+                        clear_dataset_load_cache()
+                        st.success(msg)
+                        st.rerun()
+                    else:
+                        st.error(msg)
+            elif modality == "timeseries":
+                if st.button("下载 TSB-AD 演示文件", key=f"fetch_{selected}_{modality}"):
+                    with st.spinner("首次下载 TSB-AD-U.zip（约 70MB）并解压，请稍候…"):
+                        ok, msg = fetch_tsb_demo_file(selected, data_root)
+                    if ok:
+                        clear_dataset_load_cache()
+                        st.success(msg)
+                        st.rerun()
+                    else:
+                        st.error(msg)
 
 
 def page_baseline() -> None:
