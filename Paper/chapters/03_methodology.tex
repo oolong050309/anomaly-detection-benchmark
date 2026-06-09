@@ -48,7 +48,7 @@
 
 完整的去噪防御流程如~\ref{alg:defense}~所示。其关键在于：清洁器仅在特征 $X$ 上拟合（不接触标签），随后将无监督判定与给定标签相悖的样本视为可疑，再按所选策略剔除或纠正。整个包装器与下游分类器解耦，无需修改其训练目标。
 
-\begin{algorithm}[!t]
+\begin{algorithm}
   \caption{主动去噪防御包装器}\label{alg:defense}
   \begin{algorithmic}[1]
     \Require 含噪训练集 $\mathcal{D}_{\text{dirty}}=\{(x_i,\tilde{y}_i)\}_{i=1}^N$；无监督清洁器 $f_{\text{unsup}}$；去噪比例 $\rho$；策略 $\textsc{Strat}\in\{\textsc{Trim},\textsc{Flip}\}$；下游分类器 $\mathcal{C}$
