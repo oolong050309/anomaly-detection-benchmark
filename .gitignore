@@ -285,3 +285,45 @@ hw*_report.pdf
 
 
 results/smoke_cpu/
+
+# ---------------------------------------------------------------------------
+# LaTeX Auxiliary and Temporary Files (TongjiThesis Compilation)
+# ---------------------------------------------------------------------------
+# Ignore all LaTeX intermediate compilation files in any subfolder
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.run.xml
+*.synctex.gz
+*.xdv
+*.log
+*.toc
+*.lof
+*.lot
+*.idx
+*.ind
+*.ilg
+*.glg
+*.glo
+*.gls
+*.ist
+*.acn
+*.acr
+*.alg
+*.bg
+*.pdfsync
+*.snm
+*.nav
+*.vrb
+*.synctex(busy)
+
+# Ignore compiled backup/temporary PDFs, but keep final main.pdf
+main_compiled.pdf
+main_temp.pdf
+*.synctex.gz
+*.fls
+*.fdb_latexmk

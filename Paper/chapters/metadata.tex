@@ -1,0 +1,54 @@
+% ============================================================
+%  文档类选项（在 main.tex 的 \documentclass[...]{tongjithesis} 中设置）
+%  field=science    理工科（工科类、理科类，默认）— 章节编号：1 / 1.1 / 1.1.1
+%  field=humanities 文科  （人文、法学、外语、艺术）        — 章节编号：一、/（一）/ 1.
+%  经管类属社科：编号要求依理工，撰写依理工模版；26 届为过渡期，可选 science 或
+%  humanities；自 27 届起统一使用 science。
+% ============================================================
+
+% ============================================================
+%  封面信息
+% ============================================================
+\school{计算机科学与技术学院}
+\major{计算机科学与技术}
+\student{2654321}{张同舟}
+\thesistitle{跨模态抗污染异常检测算法对比与主动防御基准评估}{面向数据与标签污染的统一评测大底座与主动去噪策略研究}
+\thesistitleeng{Cross-Modal Anomaly Detection Benchmark and Active Robust Defense under Data and Label Contamination}{An Evaluation Pipeline, Degradation Curves, and Denoising Strategies}
+\thesisadvisor{李共济\quad 教授}
+\thesisdate{\the\year}{\the\month}{\the\day} % 使用当前日期; 也可以自定义日期
+
+% ============================================================
+%  信息说明页
+% ============================================================
+
+% 成果类型（三选一）：
+%   thesis      — 毕业论文，摘要
+%   design      — 毕业设计（软件/创意/建筑等非工程设计类），摘要
+%   engineering — 毕业设计（工程设计类），设计总说明
+\infotype{thesis}
+
+% 内容简述（请用300字以内简要概述）
+\infoabstract{%
+针对异常检测面临的“跨模态割裂”与“数据标注污染”挑战，本文构建了首个涵盖表格、时序、图、CV和NLP五大模态的抗污染大一统评测基准。我们系统评估了14种算法在29个数据集上的干净性能（Exp1）、噪声退化曲线（Exp2）以及跨模态难度（Exp3）。此外，我们设计并部署了一种基于无监督去噪的主动鲁棒防御包装器（Exp4），包含样本剪裁（Trim）和标签翻转（Flip）两大策略。实验结果表明，在20\%极端标签噪声下，我们提出的IQR\_Trim防御策略表现出强大的抗噪挽救能力，使多层感知机（MLP）的AUC-ROC绝对提升达2.52\%。同时，本文定义了该防御机制在TabPFN等大模型及线性LR模型下的失效边界。本研究为高鲁棒异常检测算法的部署提供了理论和工程支撑。
+}
+
+% 毕业设计：图纸数量与正文字数（成果类型为 design 或 engineering 时填写，两者须同时填写）
+% \infodrawings{5}
+% \infowordcount{15000}
+
+% 毕业论文：正文总字数（成果类型为 thesis 时填写）
+\infothesiswords{18560}
+
+% 随附资料（每条用 \item 开头；不填则显示空白行）
+\infomaterials{
+  \item 本研究大一统数据管道及抗污染消融实验全套程序源代码；
+  \item 实验四抗噪消融动态包络图与策略对比消融高清矢量图表；
+  \item 29个跨模态异常检测数据集的预处理元数据摘要（eda\_summary.csv）。
+}
+
+% ============================================================
+%  中英文摘要页
+% ============================================================
+% 摘要页论文标题（可选）：设置摘要页展示的论文标题（非摘要 section 名称）。未设置或两个参数都留空时，沿用 \thesistitle 与 \thesistitleeng，如需让摘要页使用不同标题或独立换行位置，取消以下两行注释。
+% \abstracttitle{\TongjiThesis{}同济大学本科毕业设计（论文）模板与\LaTeX{}排版技术应用}{模板排版功能示例、学术写作规范与格式设置指南}
+% \abstracttitleeng{\TongjiThesis{} Template and \LaTeX{} Typesetting for Tongji University Undergraduate Thesis}{A Guide to Typesetting Features, Academic Writing Standards, and Formatting}

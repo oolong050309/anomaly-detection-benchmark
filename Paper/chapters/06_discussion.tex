@@ -1,0 +1,55 @@
+\chapter{深度讨论与分析}\label{chap:discussion}
+
+本章针对实验中发现的两个最具有学术深度的反直觉现象开展专题研讨：一是时间序列中监督模型与无监督模型的性能反转现象；二是主动鲁棒防御在特定地基模型与线性模型上的失效机理。在此基础上，面向实际工业生产环境，给出一套高可靠、自适应的主动防御系统部署建议。
+
+\section{LSTM-Sup 与 LSTM-AE 性能反转深度剖析}
+
+在时序异常检测模态下（参考\cref{fig:exp2-degradation}b），我们观察到一个引人注目的“性能反转”学术现象：在干净状态下，有监督循环网络 LSTM-Sup 的性能显著优于无监督重构网络 LSTM-AE；然而，当对称标签噪声 $\eta$ 仅达到 \texttt{10\%} 时，LSTM-Sup 的 AUC-ROC 指标便发生了灾难性跌落，全线落后于不使用标注标签进行训练的 LSTM-AE 算法。
+
+从深度表征学习与时序动力学的双重维度剖析，该反转现象背后蕴含着深层的科学根源：
+\begin{enumerate}
+    \item \textbf{时序依赖特征与随机标签噪声的物理冲突}：
+    时序数据具有极强的连续相关性（Temporal Dependency）和一阶/高阶马尔可夫演化特征。LSTM-Sup 通过隐层权重矩阵 $W_{hh}$ 将历史状态沿时间轴不断传递。一旦某个时刻的滑动窗口标签被随机翻转（例如将正常的平稳波形误标记为“异常”），有监督 LSTM 的反向传播梯度流（BPTT）会强制迫使循环神经元学习“假异常特征”在时间轴上的演化规律。这极易导致隐藏状态（Hidden States）中的时序上下文表征产生虚假时序相关性，从而彻底破坏了循环模型对时钟相位与频率特征的准确捕获。
+    
+    \item \textbf{时序数据固有的极度类别不平衡（Class Imbalance）放大效应}：
+    时序异常在工业现场中属于典型的“稀有事件”（通常异常占比 $<5\%$）。在 20\% 的高对称污染下，噪声异常样本的绝对数量甚至超过了真实异常的数量。LSTM-Sup 在极不平衡且富含高比例翻转标签的训练集下，其判别交叉熵损失函数（Cross-Entropy Loss）的更新方向会被占绝对多数的伪负类（False Negatives）和伪正类（False Positives）主导，导致分类边界产生平移和收缩，模型极易退化为全预测正常或异常的平凡解。
+    
+    \item \textbf{无监督重构机制的非参数高鲁棒性}：
+    与此形成鲜明对比的是，LSTM-AE 仅以重构输入时序 $X_{\text{ts}}$ 最小化重构误差为优化目标：
+    \begin{equation}
+        \mathcal{L}_{\text{Recon}} = \|X_{\text{ts}} - \hat{X}_{\text{ts}}\|_F^2
+    \end{equation}
+    由于 LSTM-AE 在训练时\textbf{完全不读取噪声标签 $Y$}，因此其梯度空间天然对任何形式的标签投毒（Label Poisoning）实现了彻底的“免免疫”。
+    此外，由于异常样本在训练序列中的出现概率极低，重构网络通过瓶颈层信息压缩，天然优先拟合并重构高频发生的正常系统动力学模态，使得真实的异常波形在输出端依然保持极高的重构均方误差。这一机制使得 LSTM-AE 在高污染工业流下展现出了坚如磐石的鲁棒性稳定性。
+\end{enumerate}
+
+\section{主动鲁棒防御的失效边界 (No Free Lunch)}
+
+在第四章的消融评测中，我们证实了基于 \texttt{IQR\_Trim} 和 \texttt{IForest\_Trim} 的主动防御包装器（Robust Defense Wrapper）在多层感知机（MLP）以及强集成树（LightGBM、XGBoost）上能够取得高达 \textbf{2.52\%} 的性能救赎；然而，对于元学习表格地基大模型 TabPFN \cite{hollmann2022tabpfn} 和逻辑回归 LR，该去噪器却引入了负面影响。
+
+这一分化现象严格满足了机器学习中的“没有免费午餐（No Free Lunch, NFL）”定理。其底层的数学与机制失效边界分析如下：
+
+\begin{enumerate}
+    \item \textbf{TabPFN 先验注意力推断的失效机理}：
+    TabPFN 是一个在数百万个合成任务上预训练好的、拥有固定参数的 Transformer 模型。在推理阶段，它不执行传统的梯度下降，而是将全部训练集 $\mathcal{D}_{\text{dirty}}$ 作为一个巨大的 Context（上下文信息），通过注意力机制实时进行原生的贝叶斯后验概率推断：
+    \begin{equation}
+        P(y_{\ast} \mid x_{\text{test}}, \mathcal{D}) \approx \text{Softmax}\left( \text{Attn}(Q(x_{\text{test}}), K(X), V(Y)) \right)
+    \end{equation}
+    
+    主动剪裁防御（Trim）通过在特征空间过滤异常得分高的点，实际上\textbf{人为抹除了训练集中的局部密度信息和边界噪声梯度估计}。由于 TabPFN 的先验注意力设计本身就具备极强的噪声后验积分平滑能力，Trim 导致的样本密度（Sample Density）缺失和特征支持流形破损，反而严重干扰了 TabPFN 进行精确贝叶斯数值积分的范围，使得 Transformer 在高维嵌入匹配时出现了严重的置信度偏差，最终导致其性能下跌了 \texttt{1.8\%}。
+    
+    \item \textbf{逻辑回归（LR）凸决策边界的线性坍塌}：
+    逻辑回归（LR）是一个参数化线性分类模型。其分离超平面的定位极大程度上依赖于紧贴分类边界（Marginal Space）上的关键支撑样本点（即类似支持向量）。
+    
+    \texttt{IQR\_Trim} 作为一种无监督空间去噪机制，在计算分位数边界公式（\cref{eq:iqr_range}）时，往往会倾向于将那些处于两类相交边缘、从而在单维特征上得分稍高但在多维边界上起关键分隔支撑作用的“前线少数派特征点”误判定为 Outliers 予以剔除。
+    这直接导致 LR 在计算极大似然估计时失去了这些至关重要的边界支撑，使线性决策平面产生了大幅度的漂移和旋转（Tilt），最终诱发了负迁移现象。
+\end{enumerate}
+
+\section{工业级鲁棒异常检测部署建议}
+
+基于上述深度讨论，本课题为高噪声、多模态的实际工业界异常检测系统设计与部署，提出了一套自适应主动防御工作流指南：
+\begin{enumerate}
+    \item \textbf{模型容量与去噪策略的精准对齐}：对于过拟合风险高、非线性拟合能力强的下游模型（如深度神经网络 MLP、复杂梯度提升树 GBDT），\textbf{必须强制部署 \texttt{IQR\_Trim} 或 \texttt{IForest\_Trim} 主动防御包装器}，在数据流入训练前剪裁约等同于噪噪声占比的脏样本，实现决策平面的高容错保护。
+    \item \textbf{线性与元学习模型的去噪避让原则}：若下游评估使用的是逻辑回归、线性支持向量机或 TabPFN 等高偏置或上下文学习模型，应\textbf{立即停用 Trim 剪裁包装}，转而采用引入 L2 正则化惩罚、Huber 鲁棒损失函数、或直接增大 TabPFN 注意力上下文宽度（Context Width）来进行被动平滑抗噪。
+    \item \textbf{构建微型“黄金干净验证集”（Golden Validation Pool）}：在实际生产中，建议人工多轮校验并保留一个占总样本量 \texttt{1\%--5\%} 的、绝对无污染的黄金验证集，专门用于动态评估主动去噪器的 Trim 比例 $\eta$ 与异常预测得分的最佳截断阈值，避免在含噪验证集上调参产生的“双重过拟合”陷阱。
+\end{enumerate}

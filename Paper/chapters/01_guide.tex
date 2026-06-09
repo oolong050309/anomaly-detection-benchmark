@@ -1,0 +1,101 @@
+\chapter{模板使用指南}\label{chap:guide}
+
+本文档是 \TongjiThesis{} 模板的使用示例，基本覆盖了模板的全部排版功能。建议在阅读本示例的同时参考源代码，了解各排版效果的实现方式。在正式撰写毕业设计（论文）时，请删除本章及后续示例章节，替换为实际内容。
+
+后续示例章节依次演示：\cref{chap:introduction}（标题、列表、字体）、\cref{chap:float}（图、表、算法、代码）、\cref{chap:math}（数字单位、公式、定理）、\cref{chap:reference}（参考文献、脚注、交叉引用）、\cref{chap:conclusion}（总结与展望），附录则示范 \cs{appendixsection}/\cs{appendixsubsection} 的用法。
+
+\section{文档类选项}
+
+在 \verb|main.tex| 的 \verb|\documentclass| 中设置选项。本模板基于 \pkg{ctexbook}，未被识别的选项会自动传递给 \pkg{ctexbook}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{文档类选项一览}\label{tab:class-options}
+  \begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{选项} & \textbf{默认值} & \textbf{说明} \\
+    \midrule
+    \texttt{oneside / twoside} & \texttt{oneside} & 单面或双面排版。双面模式下章节从奇数页开始，装订线自动左右交替。 \\
+    \texttt{degree} & \texttt{bachelor} & 学位类型，目前支持 \texttt{bachelor}（学士）。 \\
+    \texttt{field} & \texttt{science} & 专业类别。\texttt{science}：理工科（工科/理科），章节编号采用阿拉伯数字体系；\texttt{humanities}：文科（经管/人文/法学/外语/艺术），章节编号采用汉字体系，详见\cref{tab:heading-levels}。 \\
+    \texttt{fontset} & \texttt{fandol} & 字体集。\texttt{fandol}（跨平台，默认）、\texttt{windows}、\texttt{mac}、\texttt{founder}、\texttt{adobe}。详见 \verb|style/font/| 目录下的字体定义文件。 \\
+    \texttt{times} & \texttt{false} & \texttt{true}：通过 \pkg{fontspec} 调用系统 Times New Roman 字体；\texttt{false}：使用 \pkg{newtx} 宏包提供的 \TeX{} 原生 Times 风格字体。两者视觉效果相近。 \\
+    \texttt{fullwidthstop} & \texttt{circle} & 句号样式：\texttt{circle}（默认，保留“。”）或 \texttt{dot}（替换为“．”全角句点）。 \\
+    \texttt{minted} & \texttt{false} & 代码高亮方案。\texttt{false} 使用 \pkg{listings}（默认，无外部依赖），\texttt{true} 使用 \pkg{minted}（需安装 Python 3.11–3.13 和 Pygments）。 \\
+    \texttt{biblatex} & \texttt{true} & 参考文献方案。\texttt{true} 使用 \BibLaTeX{} + \texttt{biber}（功能更丰富），\texttt{false} 使用 \BibTeX{} + \pkg{gbt7714}（编译更快）。 \\
+    \texttt{algo} & \texttt{algpseudocode} & 算法排版方案。\texttt{algpseudocode}（默认）与 \texttt{algorithm2e} 语法不同，详见说明。 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{填写论文信息}
+
+论文的封面、信息说明页与中英文摘要的个人信息分散在 \verb|chapters/| 目录下的两个文件中。各文件均已提供带注释的示例，照搬并替换字段值即可；模板据此自动生成对应页面。
+
+\begin{itemize}
+  \item \textbf{封面与信息说明页} —— \verb|chapters/metadata.tex|：\cs{school}、\cs{major}、\cs{student}、\cs{thesistitle}、\cs{thesistitleeng}、\cs{thesisadvisor}、\cs{thesisdate}（封面），以及 \cs{infotype}（\texttt{thesis}、\texttt{design} 或 \texttt{engineering}）、\cs{infoabstract}、\cs{infothesiswords}（毕业论文）或 \cs{infodrawings} + \cs{infowordcount}（毕业设计）、\cs{infomaterials}（信息说明页）。封面与信息说明页由随后的 \cs{MakeCover}、\cs{MakeInfoPage} 命令自动生成。
+  \item \textbf{中英文摘要} —— \verb|chapters/00_abstract.tex|：\cs{MakeAbstract}\verb|{正文}{关键词}| 与 \cs{MakeAbstractEng}\verb|{Text}{Keywords}|，以及可选的摘要页论文标题 \cs{abstracttitle} 与 \cs{abstracttitleeng}。
+\end{itemize}
+
+可在 \cs{thesistitle} 与 \cs{thesistitleeng} 中使用 \verb|\\| 为封面标题手动添加换行，信息说明页标题会自动移除这些换行。若中英文摘要页需要使用独立换行位置，可在 \verb|chapters/metadata.tex| 中设置 \cs{abstracttitle}\verb|{摘要中文标题}{摘要中文副标题}| 与 \cs{abstracttitleeng}\verb|{Abstract English Title}{Abstract English Subtitle}|；未设置 \cs{abstracttitle} 与 \cs{abstracttitleeng} 时，中英文摘要页论文标题会沿用 \cs{thesistitle} 与 \cs{thesistitleeng}，并自动移除这些换行。
+
+\section{文档结构}
+
+\verb|main.tex| 已预置了完整的论文结构，用户只需修改各 \verb|\input| 文件的内容：
+
+\begin{table}[htbp]
+  \centering
+  \caption{文档结构一览}\label{tab:doc-structure}
+  \begin{tabularx}{\linewidth}{l l X}
+    \toprule
+    \textbf{结构} & \textbf{命令} & \textbf{说明} \\
+    \midrule
+    封面       & \verb|\MakeCover|      & 由 \verb|metadata.tex| 中的信息自动生成 \\
+    信息说明页 & \verb|\MakeInfoPage|   & 由 \verb|metadata.tex| 中的信息自动生成 \\
+    前置部分   & \verb|\frontmatter|    & 页码切换为大写罗马数字（I, II, III\ldots） \\
+    摘要     & \verb|\MakeAbstract|     & 中英文摘要及关键词（\verb|00_abstract.tex|） \\
+    目录     & \verb|\tableofcontents|  & 自动生成；可取消注释 \verb|\listoffigures|、\verb|\listoftables| \\
+    正文     & \verb|\mainmatter|       & 页码切换为阿拉伯数字，从1重新开始 \\
+    参考文献 & \verb|\makereferences|   & 自动排版，格式符合 GB/T 7714 \\
+    附录     & \verb|\appendix|         & 新增「附录」章页，节编号为 A、B、C（\verb|appendix.tex|） \\
+    谢辞     & \verb|\backmatter|       & 取消章编号，页码继续（\verb|ack.tex|） \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+正文各章放在 \verb|chapters/| 下，通过 \verb|main.tex| 中的 \verb|\input{chapters/XX_name}| 注册；参考文献数据库文件在导言区通过 \verb|\tjbibresource{bib/note.bib}| 指定，支持逗号分隔的多个文件。
+
+\section{常用命令速查}
+
+\tabref{tab:template-commands}列出了本模板提供的常用命令，具体用法在后续各章中演示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{模板常用命令}\label{tab:template-commands}
+  \begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{命令} & \textbf{用途} \\
+    \midrule
+    \multicolumn{2}{l}{\textsf{交叉引用}} \\
+    \verb|\cref{label}|           & 智能引用，自动生成“第~X~章”“图~X”“式~(X)”等 \\
+    \verb|\chapref{label}|        & 引用章：第~X~章 \\
+    \verb|\secref{label}|         & 引用节：第~X~节 \\
+    \verb|\figref{label}|         & 引用图：图~X \\
+    \verb|\tabref{label}|         & 引用表：表~X \\
+    \verb|\eqref{label}|          & 引用公式：式~(X) \\
+    \midrule
+    \multicolumn{2}{l}{\textsf{参考文献}} \\
+    \verb|\tjbibresource{file}|   & 导言区指定 \texttt{.bib} 文件 \\
+    \verb|\makereferences|        & 输出参考文献列表 \\
+    \verb|\cite{key}|             & 上标引用 \\
+    \midrule
+    \multicolumn{2}{l}{\textsf{排版辅助}} \\
+    \verb|\pkg{name}|             & 排版宏包名称（带 CTAN 链接） \\
+    \verb|\cs{name}|              & 排版命令名称（如 \cs{section}） \\
+    \verb|\TJCircled{n}|           & 带圈数字：\TJCircled{1} \TJCircled{2} \TJCircled{3}（0–50 Unicode，51+ TikZ 画圈） \\
+    \verb|\TJCircledLetter{x}|     & 带圈字母：\TJCircledLetter{A} \TJCircledLetter{b}（A–Z / a–z，或计数器名自动检测） \\
+    \verb|\TongjiThesis|            & 项目 Logo：\TongjiThesis \\
+    \verb|\dd|, \verb|\ee|, \verb|\ii|, \verb|\jj| & 直立体微分 $\dd$、自然对数底 $\ee$、虚数单位 $\ii$、$\jj$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

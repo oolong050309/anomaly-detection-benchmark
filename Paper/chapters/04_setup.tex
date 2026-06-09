@@ -1,0 +1,123 @@
+\chapter{实验设计与实施}\label{chap:setup}
+
+为了全面、多维度、科学地验证大一统跨模态数据管道的适配能力，以及我们提出设计的主动鲁棒防御包装器（Robust Defense Wrapper）在面临标签污染时的保护和挽救作用，本章详细介绍本课题的实验设计、基线对比算法、超参数设置、评测指标以及软硬件物理平台。
+
+\section{实验数据集属性与统计}
+
+本评测基准所使用的数据池涵盖了 5 大异构数据模态，共计 29 个真实学术与工业数据集，具有极强的代表性和领域异构性：
+\begin{enumerate}
+    \item \textbf{表格模态（Tabular, 9个）}：提取自经典异常检测基准库 ADBench \cite{han2022adbench}，涵盖医学诊断（cardio、thyroid、annthyroid、mammography）、卫星遥感（satellite）、航天测控（shuttle）、金融反欺诈（credit\_card）、糖尿病筛查（pima）和手写体识别（pendigits）。数据集的异常比例从最低的 \texttt{0.17\%} 到最高的 \texttt{34.9\%}，包含了高维度、极不平衡等典型工业挑战。
+    \item \textbf{图像表征模态（CV, 4个）}：提取自经典的计算机视觉库 CIFAR-10 \cite{conf1}（分为 0/1 两组）与 Fashion-MNIST（0/1 两组）。这些原始二维像素矩阵输入被转换成了通过预训练 ResNet-18 提取的 512 维高阶语义嵌入向量。
+    \item \textbf{文本表征模态（NLP, 4个）}：提取自 20NewsGroups、AG-News 和 Amazon Review 真实文本分类库。利用预训练的 BERT 基础模型 \cite{conf2} 将不定长非结构化文本映射成了 768 维稠密特征向量。
+    \item \textbf{时间序列模态（TimeSeries, 8个）}：提取自世界权威时序异常检测评测底座 TSB-AD \cite{paparrizos2024tsbad}。代表性地选用了包含机器系统突发故障（NAB）、心电图智能医学诊断（MITDB）、以及美国宇航局（NASA）航天器传感器监测（MSL）三大领域的 8 个高频多变量及单变量时序，保留了复杂的局部与长短期时间依赖特征。
+    \item \textbf{图网络模态（Graph, 4个）}：来自最前沿的图异常检测评测底座 GADBench \cite{gadbench2024}。包括金融交易欺诈网络（tfinance）、社交关系网络（reddit）、电商共买关联网（amazon）以及新浪微博欺诈网络（weibo）。各数据集不仅拥有复杂的节点高维特征，还蕴含了高维的拓扑邻接关系，节点数最高达 \texttt{39,357}。
+\end{enumerate}
+
+我们将这 29 个数据集的详细物理统计属性进行了统一提取与对齐，整理总结如\cref{tab:datasets}所示。
+
+\begin{table}[!htb]
+  \caption{跨模态抗污染评测基准数据集属性汇总}\label{tab:datasets}
+  \centering
+  \small
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llcccc@{}} \toprule
+    \textbf{数据模态} & \textbf{数据集名称 (Name)} & \textbf{样本数/节点数} & \textbf{特征维度} & \textbf{异常样本数} & \textbf{异常率 (\%)} \\ \midrule
+    \textbf{表格 (Tabular)} & cardio & 1,831 & 21 & 176 & 9.61 \\
+    & thyroid & 3,772 & 6 & 93 & 2.47 \\
+    & satellite & 6,435 & 36 & 2,036 & 31.64 \\
+    & shuttle & 49,097 & 9 & 3,511 & 7.15 \\
+    & credit\_card & 284,807 & 29 & 492 & 0.17 \\
+    & pima & 768 & 8 & 268 & 34.90 \\
+    & annthyroid & 7,200 & 6 & 534 & 7.42 \\
+    & mammography & 11,183 & 6 & 260 & 2.32 \\
+    & pendigits & 6,870 & 16 & 156 & 2.27 \\ \hline
+    \textbf{图像表征 (CV)} & cifar10\_0 & 5,263 & 512 & 263 & 5.00 \\
+    & cifar10\_1 & 5,263 & 512 & 263 & 5.00 \\
+    & fashionmnist\_0 & 6,315 & 512 & 315 & 4.99 \\
+    & fashionmnist\_1 & 6,315 & 512 & 315 & 4.99 \\ \hline
+    \textbf{文本表征 (NLP)} & 20news\_0 & 3,090 & 768 & 154 & 4.98 \\
+    & 20news\_1 & 2,514 & 768 & 125 & 4.97 \\
+    & agnews\_0 & 10,000 & 768 & 500 & 5.00 \\
+    & amazon & 10,000 & 768 & 500 & 5.00 \\ \hline
+    \textbf{时间序列 (TS)} & NAB\_Facility\_1007 & 4,750 & 1 & 152 & 3.20 \\
+    & NAB\_WebService\_4106 & 4,106 & 1 & 288 & 7.01 \\
+    & MITDB\_Medical\_17675 & 10,000 & 1 & 450 & 4.50 \\
+    & MSL\_Sensor\_530 & 2,045 & 55 & 164 & 8.02 \\ \hline
+    \textbf{图网络 (Graph)} & tfinance & 39,357 & 10 & 1,803 & 4.58 \\
+    & reddit & 10,984 & 64 & 366 & 3.33 \\
+    & amazon\_graph & 11,944 & 25 & 821 & 6.87 \\
+    & weibo & 8,405 & 400 & 868 & 10.33 \\ \bottomrule
+  \end{tabular*}
+\end{table}
+
+\section{对比算法基线与超参配置}
+
+本课题系统评测和横向对比了 14 种经典与前沿算法，其中包括 5 种在有噪标签下训练的监督学习/半监督分类器，以及 9 种不依赖标注标签的特征空间无监督异常检测算法：
+
+\subsection{有监督及半监督分类算法（5 种）}
+\begin{enumerate}
+    \item \textbf{LightGBM} \cite{ke2017lightgbm}：基于单边梯度采样（GOSS）和排他性特征捆绑（EFB）构建的高效梯度提升决策树。超参配置：\texttt{n\_estimators=100}，\texttt{learning\_rate=0.05}，叶子节点数限制为 \texttt{31}。
+    \item \textbf{XGBoost} \cite{chen2016xgboost}：经典的高可扩展树提升系统，引入了二阶泰勒展开和正则化惩罚。超参配置：\texttt{n\_estimators=100}，最大树深 \texttt{max\_depth=6}。
+    \item \textbf{多层感知机 (MLP)}：三层深度全连接神经网络。输入层大小匹配各数据集维度，隐藏层包含 128 维和 64 维节点，使用 ReLU 激活函数和 Dropout 抑制过拟合。采用 Adam 优化器，学习率固定为 \texttt{0.001}，训练 20 个 Epoch。
+    \item \textbf{TabPFN} \cite{hollmann2022tabpfn}：2022年提出的变革性表格地基模型。该模型基于 Transformer 架构，预先在数百万个合成先验数据集上进行了元学习，对于中小规模表格数据，可在数秒内实现无需迭代训练的贝叶斯后验概率预测。我们使用官方推荐的默认推理设置。
+    \item \textbf{逻辑回归 (LR)}：经典线性判别算法，作为模型复杂度的最底层基线。引入 L2 正则化惩罚项，最大迭代次数设为 \texttt{1000}。
+\end{enumerate}
+
+\subsection{无监督异常检测算法（9 种）}
+所有无监督算法均基于 PyOD \cite{zhao2019pyod} 开发套件进行实例化，异常阈值均设为自适应的特征空间均值。
+\begin{enumerate}
+    \item \textbf{隔离森林 (IForest)}：使用随机超平面构建的 100 棵孤立树集成。
+    \item \textbf{自编码器 (Autoencoder, AE)}：瓶颈维数限制为 \texttt{[d, d/2, d/4, d/2, d]} 的三层感知对称重构模型。
+    \item \textbf{局部异常因子 (LOF)}：基于 $k$-近邻密度的经典异常算法。近邻数 \texttt{n\_neighbors=20}。
+    \item \textbf{一类支持向量机 (OCSVM)}：基于 RBF 径向基核的高阶分类面约束算法 \cite{scholkopf1999support}。
+    \item \textbf{基于直方图的异常得分 (HBOS)}：一种特征完全解耦的超快速局部异常概率估算器。
+    \item \textbf{K-近邻异常得分 (KNN)}：基于第 $k$ 个最近邻的空间欧氏距离指数。
+    \item \textbf{基于 Copula 的异常检测 (COPOD)}：一种无需参数假设的多维 Copula 概率密度估算器。
+    \item \textbf{经验累积概率分布检测 (ECOD)}：基于一维经验累积分布函数乘积的异常尾部概率检测法。
+        \item \textbf{长短期记忆循环网络 (LSTM-SUP / LSTM-AE)}：专用于时间序列模态的循环模型（包括有监督 LSTM 与无监督循环自编码器），隐藏层维度设为 \texttt{64}。
+\end{enumerate}
+
+\section{评估指标与软硬件实验环境}
+
+\subsection{评估指标数学公式定义}
+
+为了保证评估在极度不平衡异常检测场景下的公正性，我们舍弃了容易受类别比例欺骗的 Accuracy（准确率），而统一采用业界标准的\textbf{双曲线下面积测度指标}：
+
+\begin{enumerate}
+    \item \textbf{AUC-ROC (受试者工作特征曲线下面积)}：
+    刻画了分类概率阈值从 $0$ 移动到 $1$ 的过程中，真阳性率（True Positive Rate, TPR）与假阳性率（False Positive Rate, FPR）之间的博弈曲线：
+    \begin{equation}
+        \text{TPR} = \frac{\text{TP}}{\text{TP} + \text{FN}}, \quad \text{FPR} = \frac{\text{FP}}{\text{FP} + \text{TN}}
+    \end{equation}
+    其中，$\text{TP}, \text{TN}, \text{FP}, \text{FN}$ 分别代表真阳性、真阴性、假阳性、假阴性。该指标越接近 $1.0$，代表模型在区分正负两类样本时的排序能力越完美。
+    
+    \item \textbf{AUC-PR (精确度--召回率曲线下面积)}：
+    更专注于少数类（即异常类）的召回质量。定义为精确度（Precision）与召回率（Recall）之间的折衷曲线：
+    \begin{equation}
+        \text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}, \quad \text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}
+    \end{equation}
+    在异常比例极度低下（如 credit\_card 的 \texttt{0.17\%}）时，AUC-PR 相比 AUC-ROC 更能灵敏地捕捉到假阳性高噪声对决策边界造成的灾难性影响。
+\end{enumerate}
+
+\subsection{软硬件物理实验环境}
+
+本课题所有的模型训练、大规模注入噪声退化实验、以及主动去噪消融运行，均在同一物理服务器内进行。其软硬件系统底座参数如\cref{tab:env-specs}所示。
+
+\begin{table}[!htb]
+  \caption{实验软硬件物理平台详细参数}\label{tab:env-specs}
+  \centering
+  \small
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lll@{}} \toprule
+    \textbf{硬件类别} & \textbf{关键物理参数} & \textbf{性能/容量指标} \\ \midrule
+    处理器 (CPU) & Intel(R) Xeon(R) Platinum 8352B CPU @ 2.70GHz & 32核心 / 64线程 \\
+    图形加速卡 (GPU) & NVIDIA GeForce RTX 4090 (Ada Lovelace) & 48 GB 显存 / PCIe 4.0 \\
+    系统运行内存 (RAM) & Samsung DDR4 ECC REG & 128 GB 运行带宽 \\
+    系统存储 (SSD) & NVMe M.2 Enterprise SSD & 2 TB 读写约 7000MB/s \\ \midrule
+    \textbf{软件类别} & \textbf{发行版本/名称} & \textbf{核心作用} \\ \midrule
+    操作系统 (OS) & Ubuntu 22.04.3 LTS (Linux Kernel 5.15) & 运行系统宿主 \\
+    集成开发环境 & Python 3.10.12 (Miniconda Virtual Env) & 实验解释器 \\
+    深度学习框架 & PyTorch 2.1.2 + CUDA 12.1 & 深度循环与自编码模型训练 \\
+    机器学习基础库 & Scikit-Learn 1.3.2 / NumPy 1.24.3 & 评估指标与通用矩阵变换 \\
+    无监督异常套件 & PyOD 1.1.2 \cite{zhao2019pyod} & 无监督清洁器及基线调用 \\
+    树模型框架 & LightGBM 4.1.0 / XGBoost 2.0.0 & 梯度提升分类器模型构建 \\ \bottomrule
+  \end{tabular*}
+\end{table}
