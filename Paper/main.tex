@@ -12,8 +12,11 @@
 
 \tjbibresource{bib/note.bib}
 
+\usepackage{multirow}
+\usepackage{amssymb}
+
 % ============================================================
-% 核心变换：将毕设模版的“章节/章目录”结构映射为标准论文的“节”结构
+% 将毕设模版的“章/节”层级映射为标准学术论文的“节/小节”层级
 % ============================================================
 \let\orgsubsection\subsection
 \let\orgsection\section
@@ -23,19 +26,18 @@
 \renewcommand{\section}{\orgsubsection}
 \renewcommand{\chapter}{\orgsection}
 
-% 彻底移除“0.”前缀，将毕设的“章(0.X)”映射为论文的“节(X)”，重新匹配图表与公式编号
+% 去除毕设“0.”前缀，将“章(0.X)”映射为论文“节(X)”，并重排图、表、公式编号
 \renewcommand{\thesection}{\arabic{section}}
 \renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
 \renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
-\renewcommand{\thefigure}{\arabic{section}-\arabic{figure}}
-\renewcommand{\thetable}{\arabic{section}-\arabic{table}}
-\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+\renewcommand{\thefigure}{\arabic{figure}}
+\renewcommand{\thetable}{\arabic{table}}
+\renewcommand{\theequation}{\arabic{equation}}
 
-% 彻底清除右上角页眉的“毕业设计（论文）”
+% 清除右上角页眉文本
 \renewcommand{\tjheadertext}{}
 
-% 彻底重设 ctexset 标题格式，去除学位论文特有的“（1）”与“（1.1.1）”等中文圆括号格式，
-% 统一恢复为国际标准学术期刊规范的十进制扁平化编号（1, 1.1, 1.1.1）
+% 恢复国际期刊规范的十进制扁平化标题编号（1, 1.1, 1.1.1）
 \ctexset{
   section/name = {,},
   section/aftername = {\hspace{0.5em}},
@@ -45,41 +47,38 @@
   subsubsection/aftername = {\hspace{0.5em}},
 }
 
-% 彻底重设第一级列表（enumerate）格式，由中文括号“（1）”恢复为学术期刊标准的阿拉伯数字加点“1.”
-\setlist[enumerate,1]{label=\arabic*.,leftmargin=2em,labelsep=0.5em}
+% 第一级有序列表恢复为阿拉伯数字加点“1.”
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=1.6em,labelsep=0.4em,topsep=2pt,itemsep=1pt}
+\setlist[itemize,1]{leftmargin=1.4em,topsep=2pt,itemsep=1pt}
 
 % ============================================================
-% 页面微调：利用 LaTeX 排版引擎特性将 30 页无损、精准缩减到 20 页标准
+% 双栏会议风格版式：在 20 页限制内提升信息密度与版面美观度
 % ============================================================
-\geometry{top=2.2cm,bottom=2.2cm,left=2.2cm,right=2.2cm}
-\setstretch{1.15}
+\geometry{top=2.0cm,bottom=2.0cm,left=1.8cm,right=1.8cm}
+\setstretch{1.04}
+\setlength{\columnsep}{1.4em}
 
 % 紧凑化图表、公式前后的垂直留白
-\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
-\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{7pt plus 2pt minus 2pt}
+\setlength{\intextsep}{7pt plus 2pt minus 2pt}
 \setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
 
 \begin{document}
 
-% 彻底简化为标准学术论文格式（无封面、无信息页、无目录，第一页直接为标题和摘要）
+% 标准学术论文格式：无封面、无信息页、无目录，首页直接为标题与摘要
 \mainmatter
 
-\input{chapters/00_abstract}
+% 标题、作者与中英文摘要以单栏跨页形式置于版心顶部，正文随后双栏排布
+\twocolumn[\input{chapters/00_abstract}]
 
-\input{chapters/02_intro}       % 第一章：绪论 (已写完)
-% \input{chapters/03_float}      % 模板自带的浮动体示例，已注释
-% \input{chapters/04_math}       % 模板自带的数学公式示例，已注释
-% \input{chapters/05_reference}  % 模板自带的引用示例，已注释
-% \input{chapters/06_conclusion} % 模板自带的结论示例，已注释
-
-\input{chapters/02_related}     % 第二章：国内外研究现状与相关工作
-
-% 以下是团队按照分工将要填写的核心章节
-\input{chapters/03_methodology} % 第三章：系统方法与架构 (由同学A撰写)
-\input{chapters/04_setup}       % 第四章：实验设计与实施 (由同学B撰写)
-\input{chapters/05_results}     % 第五章：实验结果与分析 (由同学C撰写)
-\input{chapters/06_discussion}  % 第六章：深度讨论与分析 (由同学C撰写)
-\input{chapters/07_conclusion}  % 第七章：结论与展望     (由同学D撰写)
+\input{chapters/02_intro}       % 第 1 节：引言
+\input{chapters/02_related}     % 第 2 节：相关工作
+\input{chapters/03_methodology} % 第 3 节：方法与系统架构
+\input{chapters/04_setup}       % 第 4 节：实验设计
+\input{chapters/05_results}     % 第 5 节：实验结果与分析
+\input{chapters/06_discussion}  % 第 6 节：深入讨论
+\input{chapters/07_conclusion}  % 第 7 节：结论与展望
 
 \makereferences
 

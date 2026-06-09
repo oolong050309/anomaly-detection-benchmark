@@ -1,26 +1,23 @@
 \begin{center}
-    \vspace*{1.5em}
-    {\LARGE\heiti\bfseries 跨模态抗污染异常检测算法对比与主动防御基准评估 \par}
-    \vspace{0.4em}
-    {\large\heiti\bfseries 面向数据与标签污染的统一评测大底座与主动去噪策略研究 \par}
-    \vspace{1.5em}
-    {\large 杨景翔\ (2351576) \quad 徐云鹏\ (2353583) \quad 陈艺龙\ (2352359) \quad 李雪菲\ (2354093) \par}
-    \vspace{0.5em}
-    {\small 数据分析与数据挖掘期末项目 \par}
-    \vspace{2em}
+    \vspace*{0.5em}
+    {\LARGE\heiti\bfseries 跨模态抗污染异常检测的统一基准评测与主动去噪防御研究 \par}
+    \vspace{0.6em}
+    {\normalsize 杨景翔\,(2351576) \quad 徐云鹏\,(2353583) \quad 陈艺龙\,(2352359) \quad 李雪菲\,(2354093) \par}
+    \vspace{1.0em}
 \end{center}
 
-\begin{quote}
-    \small
-    {\heiti\bfseries 摘要：} 异常检测（Anomaly Detection）作为数据挖掘与智能诊断系统的基石，旨在海量、高维的数据流中捕获稀有、偏离常规的少量异常样本。然而，在实际工程落地中，传统的异常检测评估面临着“跨模态碎片化”和“数据/标签污染”的双重严峻学术与工业痛点。为了攻克这一问题，本文构建并实现了一个\textbf{大一统的跨模态异常检测抗污染基准平台}，跨越表格、时序、图（Graph）、图像（CV）和文本（NLP）五大核心模态。
-    
-    我们系统评估了 14 种经典与前沿算法在 29 个真实异构数据集上的表现，并进行了四组大规模阶梯式实验。首先，我们横向对比了算法在完全干净状态下的性能上限（Exp1）；其次，描绘了在 0\% 至 20\% 的噪声梯度下，算法性能衰退的渐进性退化曲线（Exp2）；然后，通过归一化难度分析，探究了异构模态的分类面搜索硬度（Exp3）；最后，针对重度对称标签翻转噪声，设计并部署了一种基于无监督去噪的即插即用型主动鲁棒防御包装器（Exp4），消融评估了样本剪裁（Trim）和标签翻转（Flip）策略。
-    
-    大规模评测结果表明：我们提出的以无监督重构（如自编码器、隔离森林）和空间分布（如 IQR）为清洁器核心的 \texttt{IQR\_Trim} 防御策略表现出最强大的抗噪保护作用，在 20\% 极端污染下近乎无损干净数据表现，同时使多层感知机（MLP）和强树集成模型的 AUC-ROC 绝对提升高达 \textbf{2.52\%}；相比之下，标签翻转策略容易引入高维二次噪声，其性能在各维消融中全线弱于剪裁。最后，我们剖析并界定了该防御 wrapper 的失效边界：由于剪裁防御容易破坏 Transformer 上下文和弱线性边界支持点，导致其在元学习大模型 TabPFN 以及线性逻辑回归（LR）中起到了负作用（即满足 \emph{No Free Lunch} 定律）。本研究不仅为跨模态算法鲁棒评估打下了统一的学术底座，更对高鲁棒工业级异常检测系统的实际部署提供了极具含金量的理论指导。
-    
-    \vspace{0.5em}
-    {\heiti\bfseries 关键词：} 异常检测； 跨模态基准； 标签污染； 鲁棒学习； 主动防御； 失效边界
-\end{quote}
+\begin{minipage}{\textwidth}
+\small
+\noindent{\heiti\bfseries 摘\quad 要：}\;
+异常检测旨在从高维数据中识别偏离正常分布的稀有样本，是数据挖掘与智能诊断系统的关键环节。然而现有评测体系普遍存在两点局限：一是\textbf{评测口径碎片化}，表格、时序、图、图像与文本各模态的基准相互割裂，难以在统一标准下横向比较；二是\textbf{对标签污染缺乏系统刻画}，而真实标注中的标签噪声会显著破坏监督模型的决策边界。针对上述问题，本文构建了一个跨越五大模态的统一抗污染异常检测基准平台，在 29 个真实数据集上系统评测了 26 种经典与前沿算法，并设计了一套即插即用的主动去噪防御包装器。我们通过四组递进实验，依次刻画了算法在无噪状态下的性能上限（Exp1）、在 0\%--20\% 对称标签翻转下的退化轨迹（Exp2）、跨模态的相对分类难度（Exp3），以及主动防御在 20\% 重度污染下的去噪挽救能力与失效边界（Exp4）。实验表明：以四分位距统计为清洁器、以样本剪裁为策略的 \texttt{IQR\_Trim} 防御对高容量监督模型保护效果最佳，使多层感知机的 AUC-ROC 绝对回升 \textbf{2.52} 个百分点，且剪裁策略在各类清洁器上均稳定优于标签纠正策略；与此同时，该防御对线性逻辑回归与表格基础模型 TabPFN 产生轻微负迁移，从经验上印证了去噪鲁棒学习中的“没有免费的午餐”原则。本研究为跨模态异常检测的鲁棒性评估提供了统一底座，并为工业级抗污染系统的部署给出了可操作的策略依据。\par
+\vspace{0.4em}
+\noindent{\heiti\bfseries 关键词：}\;异常检测；\;跨模态基准；\;标签污染；\;鲁棒学习；\;主动去噪防御；\;失效边界\par
 
-\vspace{1.5em}
+\vspace{0.6em}
+\noindent{\heiti\bfseries Abstract:}\;
+{\itshape Anomaly detection identifies rare, deviating samples in high-dimensional data and underpins many data-mining and intelligent-diagnosis systems. Existing evaluation practice, however, is fragmented across modalities and rarely models the label contamination that pervades real annotation. We present a unified, contamination-aware benchmark spanning tabular, time-series, graph, image and text modalities, evaluating 26 algorithms over 29 real-world datasets, together with a plug-and-play active denoising defense. Through four progressive experiments we characterize clean-data performance ceilings, degradation trajectories under 0\%--20\% symmetric label flips, cross-modal relative difficulty, and the rescue effect and failure boundary of the defense under heavy contamination. An IQR-based sample-trimming defense (\texttt{IQR\_Trim}) restores up to \textbf{2.52} AUC-ROC points for an MLP under 20\% noise and consistently beats label correction, while inducing mild negative transfer on logistic regression and TabPFN---an empirical instance of the No-Free-Lunch principle in robust denoising.}\par
+\vspace{0.4em}
+\noindent{\heiti\bfseries Keywords:}\;{\itshape Anomaly Detection; Cross-Modal Benchmark; Label Contamination; Robust Learning; Active Denoising Defense; Failure Boundary}\par
+\end{minipage}
 
+\vspace{1.2em}

@@ -1,107 +1,178 @@
 \chapter{实验结果与分析}\label{chap:results}
 
-本章系统汇汇报课题进行的四组大规模阶梯式消融实验结果，并从模型表现上限、噪声退化曲线、跨模态硬度博弈以及主动防御去噪边界等维度展开深度学术讨论。
+本节依次报告四组实验的结果：无噪基准（Exp1）、噪声退化（Exp2）、模态难度（Exp3）与主动防御消融（Exp4）。
 
-\section{无噪跨模态基准分析 (Exp1)}
+\section{无噪基准评估（Exp1）}
 
-实验一旨在评估 14 种算法在完全干净、无标签污染状态下的性能上限，从而确立基准对照组。我们系统收集了各算法在 29 个数据集上的测试集 AUC-ROC 与 AUC-PR，并计算了全局 Friedman 平均秩。其统计结果如\cref{fig:exp1-rank}所示。
+Exp1 评估各算法在干净标注下的性能上限。我们汇总了各算法在所属模态数据集上的测试集 AUC-ROC，并对 14 种跨模态通用算法计算全局 Friedman 平均秩，结果见~\ref{fig:exp1-rank}。各模态的领先算法与最优 AUC-ROC 汇总于~\ref{tab:exp1-best}。
 
-\begin{figure}[!htb]
+\begin{figure}[!t]
   \centering
-  \includegraphics[width=0.75\linewidth]{figures/exp1/exp1_average_rank.png}
-  \caption{实验一无噪状态下 14 种对比算法的 Friedman 全局平均秩排名}\label{fig:exp1-rank}
+  \includegraphics[width=\linewidth]{figures/exp1/exp1_average_rank.png}
+  \caption{Exp1 无噪状态下 14 种通用算法的 Friedman 平均秩（值越小越优）}\label{fig:exp1-rank}
 \end{figure}
 
-分析 Friedman 统计排名，我们可以得出以下三项核心学术发现：
+\begin{table}[!t]
+  \caption{Exp1 各模态领先算法与最优/平均 AUC-ROC}\label{tab:exp1-best}
+  \centering
+  \small
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llcc@{}}
+    \toprule
+    \textbf{模态} & \textbf{最优算法} & \textbf{最优 AUC} & \textbf{模态均值} \\
+    \midrule
+    表格 & TabPFN     & 0.966 & 0.861 \\
+    图像 & LightGBM   & 0.940 & 0.815 \\
+    文本 & MLP        & 0.926 & 0.683 \\
+    图   & XGBGraph   & 0.902 & 0.714 \\
+    时序 & MiniRocket & 0.809 & 0.668 \\
+    \bottomrule
+  \end{tabular*}
+\end{table}
+
+由此可得三点观察：
 \begin{enumerate}
-    \item \textbf{有监督模型的绝对主导地位}：在前五名中，有监督分类器（LightGBM、XGBoost、MLP、RF、LR）实现了绝对的霸榜。其中，梯度提升树 LightGBM 以 \texttt{2.26} 的平均秩位居全局第一，XGBoost（\texttt{2.82}）和深度 MLP（\texttt{3.12}）紧随其后。这论证了在标注标签 100\% 纯净的理想状态下，高容量的有监督判别模型能够完美捕捉跨模态特征空间中的高度非线性几何分类面。
-    \item \textbf{无监督模型的天然上限瓶颈}：在无监督模型中，自编码器（Autoencoder, AE）与 $k$-近邻（KNN）并列表现最好（平均秩为 \texttt{8.41}），而传统的隔离森林（IForest, \texttt{9.12}）与局部密度模型 LOF（\texttt{10.94}）排名偏后。由于无监督算法在训练时完全不依赖任何先验标注标签，仅依赖样本点在特征空间中的统计密度或重构流形，因此其分类决策边界天然无法与强监督分类器抗衡。
-    \item \textbf{效率与精度的权衡博弈}：如\cref{fig:exp1-heatmap}的 AUC-ROC 全局热力图与 Nemenyi 关键差值图（CD Diagram）所示，虽然深度模型（MLP、AE）在图像（CV）与文本（NLP）模态中由于能直接承接高维稠密嵌入而在 AUC-PR 指标上小幅领先树模型，但在时间开销上（Fit Time），LightGBM 与线性回归 LR 相比深度模型表现出了 2 到 3 个数量级（Orders of Magnitude）的极速计算优势。
+    \item \textbf{监督模型在干净标注下占据主导}。Friedman 前五名均为监督算法：LightGBM（2.26）、XGBoost（2.82）、MLP（3.12）、RF（3.50）、LR（3.94）。在标注完全纯净时，高容量判别模型能够充分拟合特征空间中的非线性边界。
+    \item \textbf{无监督模型存在天然上限}。无监督方法中自编码器与 KNN 表现最佳（平均秩并列 8.41），IForest（9.12）次之，LOF（10.94）靠后。由于其仅依赖特征分布而不使用标签，决策能力天然弱于监督模型。
+    \item \textbf{模态专用模型在结构化数据上不可或缺}。在图与时序模态，通用算法让位于专用模型——图模态由 XGBGraph（0.902）、BWGNN（0.892）、GCN（0.884）领先，时序模态由 MiniRocket（0.809）领先。值得注意的是，时序最优 AUC 仅约 0.81，远低于表格的 0.97，预示该模态的高难度（详见 Exp3）。
 \end{enumerate}
 
-\begin{figure}[!htb]
+Nemenyi 检验的关键差值图（图~\ref{fig:exp1-cd}）进一步表明，监督算法与无监督算法之间的平均秩差超过临界差值（CD），差异具有统计显著性；而监督算法内部、以及多数无监督算法之间的秩差则落在 CD 之内，难以显著区分。图~\ref{fig:exp1-heatmap}的逐数据集 AUC-ROC 热力图直观印证了这一格局：监督算法（上部）在表格、CV、NLP 上整体呈现高值，而无监督算法的表现更依赖具体数据集。
+
+\begin{figure}[!t]
   \centering
-  \includegraphics[width=0.75\linewidth]{figures/exp1/exp1_auc_roc_heatmap.png}
-  \caption{实验一 14 种对比算法在 29 个异构数据集上的无噪 AUC-ROC 性能热力图}\label{fig:exp1-heatmap}
+  \includegraphics[width=\linewidth]{figures/exp1/nemenyi_cd_diagram.png}
+  \caption{Exp1 Nemenyi 关键差值（CD）图：横轴为 Friedman 平均秩，横线相连者差异不显著}\label{fig:exp1-cd}
 \end{figure}
 
-\section{数据/标签污染退化曲线分析 (Exp2)}
+效率方面（图~\ref{fig:exp1-eff}），树模型与线性模型的训练耗时较深度模型低 2--3 个数量级，在精度--效率权衡上更贴近帕累托前沿。
 
-实验二通过在训练集上注入比例从 0\% 渐进梯度递增至 20\% 的对称标签翻转噪声，系统刻画了 14 种算法在面临标签污染时的固有抗噪鲁棒性与性能退化轨迹。
-不同模态下的渐进性退化曲线如图\cref{fig:exp2-degradation}所示。
-
-\begin{figure}[!htb]
+\begin{figure}[!t]
   \centering
-  \begin{tabular}{cc}
-    \includegraphics[width=0.48\linewidth]{figures/exp2/exp2_degradation_tabular.png} &
-    \includegraphics[width=0.48\linewidth]{figures/exp2/exp2_degradation_timeseries.png} \\
-    (a) 表格模态退化曲线 (Tabular) & (b) 时序模态退化曲线 (TimeSeries) \\
-    \includegraphics[width=0.48\linewidth]{figures/exp2/exp2_degradation_graph.png} &
-    \includegraphics[width=0.48\linewidth]{figures/exp2/exp2_degradation_cv.png} \\
-    (c) 图网络模态退化曲线 (Graph) & (d) 图像表征模态退化曲线 (CV)
+  \includegraphics[width=\linewidth]{figures/exp1/exp1_efficiency_tradeoff.png}
+  \caption{Exp1 精度--效率权衡：纵轴为 AUC-ROC，横轴为训练耗时（对数刻度）}\label{fig:exp1-eff}
+\end{figure}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.96\textwidth]{figures/exp1/exp1_auc_roc_heatmap.png}
+  \caption{Exp1 全部通用算法在各数据集上的无噪 AUC-ROC 热力图（颜色越暖表示性能越高）}\label{fig:exp1-heatmap}
+\end{figure*}
+
+\section{噪声退化评估（Exp2）}
+
+Exp2 在训练集上注入 0\%--20\% 的对称标签翻转，刻画各算法的退化轨迹。各模态退化曲线见~\ref{fig:exp2-degradation}，监督与无监督两组在 20\% 污染下的平均 AUC-ROC 跌幅见~\ref{tab:exp2-drop}。
+
+\begin{figure}[!t]
+  \centering
+  \begin{tabular}{@{}cc@{}}
+    \includegraphics[width=0.49\linewidth]{figures/exp2/exp2_degradation_tabular.png} &
+    \includegraphics[width=0.49\linewidth]{figures/exp2/exp2_degradation_nlp.png} \\
+    {\scriptsize (a) 表格} & {\scriptsize (b) 文本} \\
+    \includegraphics[width=0.49\linewidth]{figures/exp2/exp2_degradation_cv.png} &
+    \includegraphics[width=0.49\linewidth]{figures/exp2/exp2_degradation_timeseries.png} \\
+    {\scriptsize (c) 图像} & {\scriptsize (d) 时序} \\
   \end{tabular}
-  \caption{实验二在不同异构数据模态下，主流有监督与无监督模型的渐进性能退化轨迹对比}\label{fig:exp2-degradation}
+  \caption{Exp2 不同模态下监督与无监督模型的渐进退化轨迹}\label{fig:exp2-degradation}
 \end{figure}
 
-分析退化曲线，我们可以总结出以下物理规律：
+\begin{table}[!t]
+  \caption{Exp2 在 20\% 污染下监督/无监督两组的平均 AUC-ROC 跌幅（百分点；负值表示性能不降反升）}\label{tab:exp2-drop}
+  \centering
+  \small
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lcc@{}}
+    \toprule
+    \textbf{模态} & \textbf{监督组} & \textbf{无监督组} \\
+    \midrule
+    表格 & \phantom{$-$}3.34 & \phantom{$-$}6.98 \\
+    图像 & 14.10 & \phantom{$-$}2.31 \\
+    文本 & 16.34 & \phantom{$-$}0.67 \\
+    图   & \phantom{$-$}5.89 & \phantom{$-$}6.00 \\
+    时序 & 19.67 & $-1.16$ \\
+    \bottomrule
+  \end{tabular*}
+\end{table}
+
+退化曲线揭示出以下规律：
 \begin{enumerate}
-    \item \textbf{有监督判别面的崩溃衰退}：在所有数据模态中，随着标签噪声 $\eta$ 的提升，5 种有监督算法的 AUC-ROC 均呈现出了单调非线性衰减的趋势。在表格模态中（\cref{fig:exp2-degradation}a），标准 MLP 的性能发生了最剧烈的跌落，在 20\% 极端噪声下的平均 AUC-ROC 跌幅达到了 \textbf{12.4\%}。这是因为深度神经网络具有强大的万能函数逼近能力，会无保留地强制过拟合那些被翻转的噪声标签，导致其高维超平面决策边界发生严重扭曲。
-    \item \textbf{表征嵌入的空间天然屏障作用}：在 CV（\cref{fig:exp2-degradation}d）与 NLP 模态中，退化曲线的斜率明显平缓于表格模态。其深层物理机制在于：CV 和 NLP 的特征分别是由在海量无监督干净语料/图像上预训练的 ResNet 和 BERT 提取的高阶语义稠密向量，这些特征在空间中已经具有了极强的空间聚类和局部相似性屏障。即使微调层的标签混淆，其流形特征依旧能为分类器提供强有力的局部一致性几何支撑。
-    \item \textbf{图网络结构正则化效应}：在图网络模态下（\cref{fig:exp2-degradation}c），图神经网络 GCN 的退化斜率明显比单纯利用节点特征分类的 MLP 更加平缓。这是因为 GCN 在特征前向传播时，通过邻接矩阵 $A$ 显式执行了邻域特征的均值平滑或拉普拉斯平滑（Laplacian Smoothing）。这一结构化聚集过程相当于在模型内部施加了强大的空间低通滤波器（Low-pass Filter），从而部分消解了随机噪声点造成的梯度剧烈震荡。
+    \item \textbf{监督模型随噪声单调退化，且模态间差异显著}。监督组在所有模态均随 $\eta$ 增大而下降，但跌幅高度依赖模态：表格最轻（约 3.3 个百分点），图像、文本、时序最重（14--20 个百分点）。其中 MLP 在文本上的跌幅最大（约 22.8 个百分点），因其在预训练嵌入上的非线性边界对翻转标签极为敏感；而表格中存在大量冗余、规模庞大的数据集，对固定比例的标签噪声具有更强的稀释效应。
+    \item \textbf{无监督模型对标签噪声具有结构性免疫}。由于训练时不读取标签，多数无监督方法的跌幅极小（文本仅 0.67、图像 2.31 个百分点）。例外出现在表格模态：基于距离/密度的 LOF、KNN 在该设定下退化明显（无监督组均值被抬高至 6.98），表明这类方法对训练分布的扰动较为敏感。
+    \item \textbf{时序模态出现性能反转}。时序无监督组的平均跌幅为 $-1.16$ 个百分点，即整体不降反升，而监督组骤降约 19.7 个百分点。这一交叉现象意味着在重度污染下，无监督方法将反超监督方法，详见第~\ref{chap:discussion}~节的专题讨论。
 \end{enumerate}
 
-\section{模态分类难度与跨模态综合排名 (Exp3)}
+图~\ref{fig:exp2-heatmap}以热力图汇总了各算法在各模态下从 0\% 到 20\% 的 AUC-ROC 跌幅，可清晰看出监督算法（暖色块集中）与无监督算法（普遍偏冷）在抗噪性上的系统性差异。
 
-实验三旨在跨越不同模态之间的几何代沟，评估和量化各模态下寻找异常检测最优决策面的“特征空间搜索难度”。我们对 29 个数据集的全局相对性能差距进行了归一化，其模态难度博弈与雷达空间拓扑图如\cref{fig:exp3-difficulty}所示。
-
-\begin{figure}[!htb]
+\begin{figure*}[!t]
   \centering
-  \begin{tabular}{cc}
-    \includegraphics[width=0.48\linewidth]{figures/exp3/exp3_modality_difficulty.png} &
-    \includegraphics[width=0.48\linewidth]{figures/exp3/exp3_radar_top_algorithms.png} \\
-    (a) 模态分类搜索硬度量化 & (b) 顶尖算法在多模态上的雷达性能足迹
+  \includegraphics[width=0.92\textwidth]{figures/exp2/exp2_cross_modal_auc_drop_heatmap.png}
+  \caption{Exp2 各算法在五大模态下由 0\% 至 20\% 污染的 AUC-ROC 跌幅热力图（颜色越暖跌幅越大）}\label{fig:exp2-heatmap}
+\end{figure*}
+
+\section{模态难度与跨模态排名（Exp3）}
+
+Exp3 以各模态的平均与最优 AUC-ROC 量化“寻找最优决策面”的相对难度（参见~\ref{tab:exp1-best}）。难度由低到高（均值由高到低）依次为：表格（0.861）、图像（0.815）、图（0.714）、文本（0.683）、时序（0.668）；即便取各模态最优算法，时序仍仅达 0.793，显著低于其余模态。
+
+\begin{figure}[!t]
+  \centering
+  \begin{tabular}{@{}cc@{}}
+    \includegraphics[width=0.49\linewidth]{figures/exp3/exp3_modality_difficulty.png} &
+    \includegraphics[width=0.49\linewidth]{figures/exp3/exp3_radar_top_algorithms.png} \\
+    {\scriptsize (a) 模态难度量化} & {\scriptsize (b) 顶尖算法跨模态足迹} \\
   \end{tabular}
-  \caption{实验三跨模态硬度博弈与多维算法性能足迹对比}\label{fig:exp3-difficulty}
+  \caption{Exp3 跨模态难度与顶尖算法的多模态性能足迹}\label{fig:exp3-difficulty}
 \end{figure}
 
-根据多维博弈结果，可以形成以下学术洞察：
+进一步分析可得：
 \begin{enumerate}
-    \item \textbf{时序与图网络模态的高分类难度}：时序和图网络展现出了最高的分类硬度指数（Difficulty Index 显著高于 CV 和 NLP）。这是因为时序数据中包含了不可忽视的时间流依赖和相位偏移，而图结构数据包含了拓扑邻接非欧几何关系，这使得传统的树集成算法（如 LightGBM、XGBoost）在此类空间下出现了分类面搜索受阻，必须依赖专用的 LSTM-AE 或图神经网络 GCN 才能捕获结构异常。
-    \item \textbf{表格数据的极度不确定性}：表格数据的分类硬度分布呈现出了极高的方差（Variance）。在部分低特征维度的 thyroid、mammography 数据集中，决策面相对清晰；但在极高维和极度不平衡（如 credit\_card）下，难度呈现指数级上升。这揭示了表格数据由于特征间不存在时空物理关联，分类边界往往呈现极度破碎的分裂状态。
+    \item \textbf{时序与图模态难度最高}。时序数据蕴含相位偏移与长程依赖，图数据具有非欧拓扑关系，二者均使依赖独立同分布假设的通用算法搜索受阻，必须借助专用模型。
+    \item \textbf{监督树模型与 MLP 跨模态泛化最稳健}。按跨模态平均 AUC-ROC 排名，RF（0.859）、TabPFN（0.856）、LightGBM（0.848）、XGBoost（0.847）、MLP（0.846）位居前列，显示出在异构模态上的一致表达能力（图~\ref{fig:exp3-difficulty}b）。
 \end{enumerate}
 
-\section{主动鲁棒防御消融大评测 (Exp4)}
+算法--模态交叉热力图（图~\ref{fig:exp3-heatmap}）进一步刻画了“算法×模态”的适配格局：监督模型在表格与图像上普遍取得高分，而文本与时序则对算法选择更为敏感，仅少数方法能维持较高性能。
 
-作为本研究的最核心贡献，实验四消融评测了由 9 种无监督清洁器（IQR、IForest、Autoencoder 等）分别在 Trim（样本剪裁）与 Flip（标签纠错翻转）两类策略下，对 5 种 downstream 分类器在 20\% 极端标签噪声下的抗噪挽救能力。
-其最顶尖的“黄金挽救者（Best Defenders）”跨数据集对比动态包络面如图\cref{fig:exp4-best}所示。
-
-\begin{figure}[!htb]
+\begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.9\linewidth]{figures/exp4/exp4_dynamic_best_defense_horizontal.png}
-  \caption{实验四在 20\% 极端对称标签污染下，经过主动防御包装器救赎（IQR\_Trim）与原始 Standard 性能的动态包络面对比图}\label{fig:exp4-best}
+  \includegraphics[width=0.92\textwidth]{figures/exp3/exp3_algorithm_modality_auc_roc_heatmap.png}
+  \caption{Exp3 算法--模态 AUC-ROC 交叉热力图}\label{fig:exp3-heatmap}
+\end{figure*}
+
+\section{主动防御消融（Exp4）}
+
+Exp4 在表格模态、20\% 重度污染下，消融 9 种无监督清洁器在 Trim 与 Flip 两种策略下对 6 种下游分类器的去噪效果。最优组合 \texttt{IQR\_Trim} 相对无防御基线的挽救幅度见~\ref{tab:exp4-defense}，整体消融见~\ref{fig:exp4-ablation}，最优防御者的跨数据集包络见~\ref{fig:exp4-best}。
+
+\begin{table}[!t]
+  \caption{Exp4 在 20\% 污染下 \texttt{IQR\_Trim} 防御对各下游分类器的 AUC-ROC 影响}\label{tab:exp4-defense}
+  \centering
+  \small
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lccc@{}}
+    \toprule
+    \textbf{下游分类器} & \textbf{无防御} & \textbf{IQR\_Trim} & \textbf{$\Delta$ (pp)} \\
+    \midrule
+    MLP      & 0.938 & 0.963 & $+2.52$ \\
+    XGBoost  & 0.954 & 0.967 & $+1.26$ \\
+    LightGBM & 0.960 & 0.970 & $+0.95$ \\
+    RF       & 0.962 & 0.969 & $+0.61$ \\
+    \midrule
+    LR       & 0.960 & 0.948 & $-1.21$ \\
+    TabPFN   & 0.982 & 0.974 & $-0.75$ \\
+    \bottomrule
+  \end{tabular*}
+\end{table}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/exp4/exp4_ablation_bar.png}
+  \caption{Exp4 不同清洁器与策略（Trim/Flip）的去噪性能提升消融}\label{fig:exp4-ablation}
 \end{figure}
 
-深度剖析该主动去噪防御的消融表现（参考\cref{fig:exp4-ablation}），我们可以得出以下极具学术和工程指导意义的结论：
-
-\begin{figure}[!htb]
+\begin{figure}[!t]
   \centering
-  \includegraphics[width=0.75\linewidth]{figures/exp4/exp4_ablation_bar.png}
-  \caption{实验四主动鲁棒防御包装器不同去噪机制与策略在多模态下的消融性能提升对比}\label{fig:exp4-ablation}
+  \includegraphics[width=\linewidth]{figures/exp4/exp4_dynamic_best_defense_horizontal.png}
+  \caption{Exp4 在 20\% 污染下 \texttt{IQR\_Trim} 防御与无防御基线的跨数据集性能包络}\label{fig:exp4-best}
 \end{figure}
 
+由消融结果可得三点结论：
 \begin{enumerate}
-    \item \textbf{剪裁策略（Trim）在全线对比中击败纠错策略（Flip）}：
-    实验结果表明，无论是基于何种无监督清洁器，\texttt{\_Trim} 策略的最终 AUC-ROC 提升均大幅优于其对应的 \texttt{\_Flip} 策略。
-    从理论机制上剖析：虽然 Flip 策略具有保留训练样本量完整的优势，但由于其依赖无监督检测器的预测来翻转标签，一旦无监督检测器在决策边界附近发生误判（False Positive），便会在特征空间的关键交界处引入\textbf{二次高维混淆噪声（Secondary Label Noise）}，导致分类超平面决策面加速畸变。相反，Trim 策略虽然损失了微小比例的样本量，但它能够彻底将这部分最可疑的随机游走噪声样本从损失函数的反向传播计算中直接抹除，从而为下游分类器保留了一个高置信度的、高标签纯净度的最优凸空间。
-    
-    \item \textbf{IQR 空间清洁器与 MLP 下游判别器的“黄金组合”}：
-    在 20\% 的极端数据污染下，包装了 \texttt{IQR\_Trim} 的多层感知机（MLP）表现出了最强大的挽救成效，在测试集上的平均 AUC-ROC 绝对提升幅度达到了惊人的 \textbf{2.52\%}，几乎完美挽回了因噪声注入造成的所有损失，逼近干净上限。
-     IQR 去噪器作为非参数统计方法，不依赖于关于分布类型的强假设，在剔除跨特征单维空间离群点时具有极高、极坚实的置信度，从而能高精度地滤除被错误标记为正常的极端特征噪声。
-    
-    \item \textbf{主动防御机制的失效边界与 No Free Lunch（没有免费午餐）定律}：
-    我们通过大规模消融评测，首次客观并精准地科学界定了该防御包装器的\textbf{失效边界（Failure Boundary）}。我们惊奇地发现，虽然 \texttt{IQR\_Trim} 与 \texttt{IForest\_Trim} 对 MLP 和树模型具有极强的救赎保护作用，但在以下两个场景下，它们会起到显著的反作用（性能不升反降）：
-    \begin{itemize}
-        \item \textbf{地基大模型 TabPFN}：当对 TabPFN 施加 Trim 去噪时，其在测试集上的 AUC-ROC 平均下降了 \texttt{1.8\%}。这是因为 TabPFN 作为一个元学习 Transformer 模型，本质上是在训练集中通过注意力机制执行实时的上下文贝叶斯推理（In-context Bayesian Inference）。Trim 策略会破坏原始训练集分布的局部样本密度（Density Density），而这种密度对 TabPFN 执行隐式后验积分起着至关重要的作用。
-        \item \textbf{线性分类器（逻辑回归 LR）}：Trim 策略导致 LR 的分类面出现了一定程度的塌陷。因为 LR 是线性边界，其权重矩阵极度依赖位于分类面最前线边界上的关键支撑特征点。Trim 去噪极易误将这些最靠近线性边界、因而得分稍高的“关键少数派特征点”剔除，导致 LR 的线性超平面发生大角度的滑动和倾斜。
-    \end{itemize}
+    \item \textbf{剪裁策略全面优于纠正策略}。在所有清洁器上，\texttt{\_Trim} 的最终 AUC-ROC 均高于对应的 \texttt{\_Flip}：跨清洁器平均看，Trim 相对基线的损失约为 $-0.9$ 至 $-2.3$ 个百分点，而 Flip 高达 $-4.5$ 至 $-7.0$ 个百分点。Flip 依赖无监督检测器在决策边界附近的判别，一旦误判便会引入“二次标签噪声”；而 Trim 直接剔除可疑样本，为下游模型保留了高纯度的训练子集。
+    \item \textbf{IQR\_Trim 与高容量监督模型构成最佳组合}。在 20\% 污染下，\texttt{IQR\_Trim} 使 MLP 的 AUC-ROC 绝对回升 \textbf{2.52} 个百分点，几乎抹平噪声带来的损失；对 XGBoost、LightGBM、RF 亦分别带来 $+1.26$、$+0.95$、$+0.61$ 个百分点的提升。IQR 作为非参数统计方法，在剔除单维极端离群点时具有很高的置信度。
+    \item \textbf{防御存在明确的失效边界}。如~\ref{tab:exp4-defense}~下半部分所示，同一 \texttt{IQR\_Trim} 防御对逻辑回归（$-1.21$）与 TabPFN（$-0.75$）产生负迁移。这一“有得有失”的分化印证了去噪鲁棒学习中的“没有免费的午餐”原则，其机制将在第~\ref{chap:discussion}~节展开。
 \end{enumerate}

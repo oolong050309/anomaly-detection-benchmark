@@ -1,10 +1,33 @@
-\chapter{国内外研究现状与相关工作}\label{chap:related}
+\chapter{相关工作}\label{chap:related}
 
-针对异常检测的基准评测，国内外学者在近年来开展了积极探索并发布了若干评测框架，但均存在显著的模态局限性：
+\section{异常检测算法体系}
+异常检测方法可大致分为无监督与（半）监督两条技术路线。无监督方法不依赖标注，依据样本在特征空间中的统计规律识别离群点，代表性方法包括基于密度的 LOF、基于近邻距离的 KNN、基于路径隔离的隔离森林（IForest）、基于核边界的一类支持向量机（OCSVM）\cite{scholkopf1999support}，以及近年来基于概率分布的 ECOD 与 COPOD 等高效估计器；这类方法被 PyOD \cite{zhao2019pyod} 等工具箱系统集成。深度方法则通过自编码器的重构误差 \cite{an2015variational} 或深度单类支持向量描述（DeepSVDD）刻画正常流形。当标注可得时，梯度提升树（LightGBM \cite{ke2017lightgbm}、XGBoost \cite{chen2016xgboost}）与神经网络等监督判别器通常能取得更高的检测上限。在时序与图模态下，方法进一步专门化，分别发展出循环重构、子序列距离与图神经网络等代表性技术。
+
+\section{标签噪声学习与鲁棒训练}
+标签噪声是监督学习中的经典难题。Frénay 与 Verleysen \cite{frenay2013labelnoise} 系统综述了噪声的成因与建模方式，其中对称标签翻转因其简洁的转移矩阵形式而被广泛用作鲁棒性评测的标准设定。应对标签噪声的策略大致可分为三类：损失函数修正（如鲁棒损失与重加权）、噪声转移矩阵估计，以及样本选择与净化。本文采用的样本剪裁与标签纠正属于第三类——通过识别并处理可疑样本来净化训练集 \cite{jiang2020trim}。与多数需要修改训练目标或重训练模型的方法不同，本文将去噪过程封装为与下游分类器解耦的、即插即用的前置包装器，从而可在不改动既有检测模型的前提下提升其抗噪能力。
+
+\section{异常检测评测基准}
+近年来，社区陆续发布了若干高质量评测框架，但其覆盖范围均受限于单一模态：
 \begin{itemize}
-    \item \textbf{ADBench} \cite{han2022adbench}：作为表格领域的里程碑级评测框架，系统探究了 30 种算法在有噪、无噪等数万种表格场景下的表现，但其数据集局限于 Tabular、NLP 与 CV 模态，无法评估在时序（TimeSeries）和图（Graph）模态下算法的表现，缺乏对结构相关性的评估能力。
-    \item \textbf{TSB-AD} \cite{paparrizos2024tsbad}：是目前时序异常检测领域最权威的端到端评测底座，涵盖 12 种不同类型的异常、数十种预测与重构模型，但其不具备表格、图神经网络等经典和交叉学科算法的评测能力，无法展开跨模态的横向对比。
-    \item \textbf{GADBench} \cite{gadbench2024}：作为 2024 年底最新发布的图异常检测（Graph Anomaly Detection）评测新底座，系统对比了传统图异常算法与前沿图神经网络，但其评估面仅局限在网络结构化数据，无法与传统的经典数据分类模型在相同维度上展开博弈。
+    \item \textbf{ADBench} \cite{han2022adbench} 是表格异常检测的里程碑式基准，系统比较了大量算法在有噪/无噪等多种设定下的表现，并提供了由 ResNet 与 BERT 提取的 CV/NLP 嵌入数据；但其不涵盖时序与图模态，难以评估时间依赖与结构相关性。
+    \item \textbf{TSB-AD} \cite{paparrizos2024tsbad} 是时序异常检测领域的权威端到端评测底座，涵盖多种异常类型与预测/重构模型，但不具备对表格、图等模态的横向评测能力。
+    \item \textbf{GADBench} \cite{gadbench2024} 面向图异常检测，系统比较了传统图算法与图神经网络，但评估面局限于结构化网络数据。
 \end{itemize}
 
-综上所述，当前异常检测领域亟需一个打破上述烟囱式框架、能够在\textbf{完全相同的噪声退化标准、相同的统一数据管道接口下开展多维交叉消融评测}的新型学术基准。
+如~\ref{tab:benchmark-compare}~所示，上述基准在模态覆盖与污染评测两个维度上均存在空白。本文的工作旨在弥合这一空白：在统一的数据接口与一致的对称标签污染标准下，实现五大模态的横向可比评测，并在此之上引入主动去噪防御这一新的评估维度。
+
+\begin{table*}[!t]
+  \caption{代表性异常检测评测基准的覆盖范围对比（\checkmark 表示支持，--- 表示不支持）}\label{tab:benchmark-compare}
+  \centering
+  \small
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccccc@{}}
+    \toprule
+    \textbf{基准} & \textbf{表格} & \textbf{时序} & \textbf{图} & \textbf{图像} & \textbf{文本} & \textbf{标签污染评测} & \textbf{主动去噪防御} \\
+    \midrule
+    ADBench \cite{han2022adbench}      & \checkmark & --- & --- & \checkmark & \checkmark & 部分 & --- \\
+    TSB-AD \cite{paparrizos2024tsbad}  & --- & \checkmark & --- & --- & --- & --- & --- \\
+    GADBench \cite{gadbench2024}       & --- & --- & \checkmark & --- & --- & --- & --- \\
+    \textbf{本文} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabular*}
+\end{table*}
