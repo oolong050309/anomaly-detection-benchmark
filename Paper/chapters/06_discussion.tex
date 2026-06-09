@@ -18,7 +18,13 @@ Exp2 显示，时序模态在重度污染下出现了显著的性能反转：监
 
 \section{主动防御的失效边界}
 
-Exp4 表明，\texttt{IQR\_Trim} 对 MLP 与树集成模型带来正向挽救，却对逻辑回归（$-1.21$ 个百分点）与 TabPFN（$-0.75$ 个百分点）产生负迁移；若进一步在所有清洁器上平均，二者的损失更为明显。这一分化恰是“没有免费的午餐”原则的具体体现，其机制如下：
+Exp4 表明，\texttt{IQR\_Trim} 对 MLP 与树集成模型带来正向挽救，却对逻辑回归（$-1.21$ 个百分点）与 TabPFN（$-0.75$ 个百分点）产生负迁移；若进一步在所有清洁器上平均，二者的损失更为明显。这一分化恰是“没有免费的午餐”原则的具体体现（图~\ref{fig:nfl}）：高容量监督模型位于受益区，而线性 LR 与上下文学习的 TabPFN 落入失效区。其机制如下：
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/nfl_boundary.png}
+  \caption{主动剪裁防御对六种下游模型的净收益与失效边界}\label{fig:nfl}
+\end{figure}
 
 \begin{enumerate}
     \item \textbf{TabPFN：上下文密度被破坏}。TabPFN 是参数固定的预训练 Transformer，推理时将整个训练集作为上下文，通过注意力执行近似的贝叶斯后验推断：

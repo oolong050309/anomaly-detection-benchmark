@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 388" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrowSm" markerWidth="8" markerHeight="8" refX="5.5" refY="2.6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L6,2.6 L0,5.2 Z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <style>
+    .panel  { fill:#ffffff; stroke:#cbd5e1; stroke-width:1.2; }
+    .hdr    { font-size:13.5px; font-weight:700; fill:#ffffff; }
+    .num    { font-size:12px; font-weight:700; fill:#ffffff; }
+    .body   { font-size:11px; fill:#1e293b; }
+    .sub    { font-size:9.5px; fill:#64748b; }
+    .chip   { fill:#f1f5f9; stroke:#cbd5e1; stroke-width:0.8; }
+    .chiptx { font-size:10.5px; fill:#334155; }
+    .flow   { font-size:10.5px; font-weight:600; fill:#334155; }
+    .accent { fill:#0e7490; }
+    .tag    { font-size:9px; font-weight:700; fill:#0e7490; }
+  </style>
+
+  <!-- ===== top flow rail ===== -->
+  <text x="20" y="34" class="flow" fill="#94a3b8">数据流 / 控制流</text>
+  <line x1="150" y1="29" x2="1160" y2="29" stroke="#e2e8f0" stroke-width="1.5"/>
+  <polygon points="1160,25 1168,29 1160,33" fill="#cbd5e1"/>
+
+  <!-- ===================== PANEL 1 ===================== -->
+  <g>
+    <rect class="panel" x="20" y="55" width="204" height="320" rx="9"/>
+    <path d="M20,64 a9,9 0 0 1 9,-9 h186 a9,9 0 0 1 9,9 v25 h-204 z" fill="#334155"/>
+    <circle cx="38" cy="76.5" r="9" fill="#ffffff" opacity="0.18"/>
+    <text x="38" y="80.5" text-anchor="middle" class="num">1</text>
+    <text x="54" y="80.5" class="hdr">多模态输入与对齐</text>
+
+    <!-- modality chips -->
+    <g class="chiptx">
+      <rect class="chip" x="34" y="100" width="176" height="20" rx="5"/><text x="44" y="113.5">表格 Tabular</text>
+      <rect class="chip" x="34" y="125" width="176" height="20" rx="5"/><text x="44" y="138.5">时序 TimeSeries</text>
+      <rect class="chip" x="34" y="150" width="176" height="20" rx="5"/><text x="44" y="163.5">图 Graph</text>
+      <rect class="chip" x="34" y="175" width="176" height="20" rx="5"/><text x="44" y="188.5">图像 CV（ResNet 嵌入）</text>
+      <rect class="chip" x="34" y="200" width="176" height="20" rx="5"/><text x="44" y="213.5">文本 NLP（BERT 嵌入）</text>
+    </g>
+    <line x1="122" y1="225" x2="122" y2="244" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrowSm)"/>
+    <rect x="34" y="248" width="176" height="44" rx="6" fill="#eef2f6" stroke="#94a3b8" stroke-width="1"/>
+    <text x="122" y="266" text-anchor="middle" class="body" font-weight="600">统一特征适配器</text>
+    <text x="122" y="282" text-anchor="middle" class="sub">scikit-learn 标准接口</text>
+    <line x1="122" y1="296" x2="122" y2="312" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrowSm)"/>
+    <rect x="78" y="316" width="88" height="26" rx="13" fill="#334155"/>
+    <text x="122" y="333" text-anchor="middle" fill="#ffffff" font-size="12.5px" font-weight="700">( X , Y )</text>
+    <text x="122" y="360" text-anchor="middle" class="sub">干净数据集</text>
+  </g>
+
+  <!-- arrow 1->2 -->
+  <text x="239" y="205" text-anchor="middle" class="sub" fill="#475569">污染</text>
+  <line x1="224" y1="215" x2="252" y2="215" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===================== PANEL 2 ===================== -->
+  <g>
+    <rect class="panel" x="254" y="55" width="204" height="320" rx="9"/>
+    <path d="M254,64 a9,9 0 0 1 9,-9 h186 a9,9 0 0 1 9,9 v25 h-204 z" fill="#b45309"/>
+    <circle cx="272" cy="76.5" r="9" fill="#ffffff" opacity="0.18"/>
+    <text x="272" y="80.5" text-anchor="middle" class="num">2</text>
+    <text x="288" y="80.5" class="hdr">对称标签污染</text>
+
+    <text x="356" y="112" text-anchor="middle" class="body" font-weight="600">噪声转移矩阵 T</text>
+    <!-- 2x2 matrix -->
+    <g stroke="#334155" stroke-width="1.3" fill="none">
+      <path d="M300,124 v44"/><path d="M300,124 h7"/><path d="M300,168 h7"/>
+      <path d="M412,124 v44"/><path d="M412,124 h-7"/><path d="M412,168 h-7"/>
+    </g>
+    <text x="332" y="142" text-anchor="middle" class="body">1−η</text>
+    <text x="384" y="142" text-anchor="middle" class="body">η</text>
+    <text x="332" y="162" text-anchor="middle" class="body">η</text>
+    <text x="384" y="162" text-anchor="middle" class="body">1−η</text>
+
+    <rect x="290" y="186" width="132" height="22" rx="5" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+    <text x="356" y="201" text-anchor="middle" class="body" fill="#9a3412">污染率 η ∈ [0, 0.2]</text>
+    <text x="356" y="228" text-anchor="middle" class="sub">仅污染训练集，测试集保持干净</text>
+
+    <line x1="356" y1="240" x2="356" y2="312" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrowSm)"/>
+    <rect x="312" y="316" width="88" height="26" rx="13" fill="#b45309"/>
+    <text x="356" y="333" text-anchor="middle" fill="#ffffff" font-size="12.5px" font-weight="700">( X , Ỹ )</text>
+    <text x="356" y="360" text-anchor="middle" class="sub">含噪数据集</text>
+  </g>
+
+  <!-- arrow 2->3 -->
+  <text x="472" y="205" text-anchor="middle" class="sub" fill="#475569">去噪</text>
+  <line x1="458" y1="215" x2="486" y2="215" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===================== PANEL 3 (CORE) ===================== -->
+  <g>
+    <rect class="panel" x="488" y="50" width="204" height="330" rx="9" stroke="#0e7490" stroke-width="2"/>
+    <path d="M488,59 a9,9 0 0 1 9,-9 h186 a9,9 0 0 1 9,9 v25 h-204 z" fill="#0e7490"/>
+    <circle cx="506" cy="71.5" r="9" fill="#ffffff" opacity="0.2"/>
+    <text x="506" y="75.5" text-anchor="middle" class="num">3</text>
+    <text x="522" y="75.5" class="hdr">主动去噪防御</text>
+    <rect x="624" y="62" width="58" height="16" rx="8" fill="#ffffff"/>
+    <text x="653" y="73.5" text-anchor="middle" class="tag">核心贡献</text>
+
+    <rect x="500" y="92" width="180" height="36" rx="6" fill="#ecfeff" stroke="#67e8f9" stroke-width="1"/>
+    <text x="590" y="108" text-anchor="middle" class="body" font-weight="600">无监督清洁器（仅用 X）</text>
+    <text x="590" y="122" text-anchor="middle" class="sub">IQR · IForest · AutoEncoder …</text>
+    <text x="590" y="146" text-anchor="middle" class="body">异常得分 sᵢ = f(xᵢ)  →  标记可疑样本</text>
+
+    <line x1="590" y1="154" x2="590" y2="168" stroke="#94a3b8" stroke-width="1.2"/>
+    <line x1="540" y1="168" x2="640" y2="168" stroke="#94a3b8" stroke-width="1.2"/>
+    <line x1="540" y1="168" x2="540" y2="180" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrowSm)"/>
+    <line x1="640" y1="168" x2="640" y2="180" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrowSm)"/>
+
+    <!-- two strategies -->
+    <rect x="500" y="184" width="84" height="60" rx="6" fill="#0e7490"/>
+    <text x="542" y="202" text-anchor="middle" fill="#ffffff" font-size="11.5px" font-weight="700">剪裁 Trim</text>
+    <text x="542" y="218" text-anchor="middle" fill="#e0f2fe" font-size="9px">剔除可疑样本</text>
+    <text x="542" y="233" text-anchor="middle" fill="#bae6fd" font-size="8.5px">（最优策略）</text>
+
+    <rect x="596" y="184" width="84" height="60" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+    <text x="638" y="202" text-anchor="middle" class="body" font-weight="700">纠正 Flip</text>
+    <text x="638" y="218" text-anchor="middle" class="sub">翻转可疑标签</text>
+    <text x="638" y="233" text-anchor="middle" fill="#94a3b8" font-size="8.5px">（易引入二次噪声）</text>
+
+    <line x1="542" y1="244" x2="542" y2="300" stroke="#0e7490" stroke-width="1.4" marker-end="url(#arrowSm)"/>
+    <line x1="638" y1="244" x2="638" y2="300" stroke="#cbd5e1" stroke-width="1.2" marker-end="url(#arrowSm)"/>
+
+    <rect x="510" y="304" width="160" height="28" rx="13" fill="#0e7490"/>
+    <text x="590" y="322" text-anchor="middle" fill="#ffffff" font-size="12.5px" font-weight="700">净化数据集 D_clean</text>
+    <text x="590" y="352" text-anchor="middle" class="sub">即插即用，与下游分类器解耦</text>
+  </g>
+
+  <!-- arrow 3->4 -->
+  <text x="706" y="205" text-anchor="middle" class="sub" fill="#475569">训练</text>
+  <line x1="692" y1="215" x2="720" y2="215" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===================== PANEL 4 ===================== -->
+  <g>
+    <rect class="panel" x="722" y="55" width="204" height="320" rx="9"/>
+    <path d="M722,64 a9,9 0 0 1 9,-9 h186 a9,9 0 0 1 9,9 v25 h-204 z" fill="#334155"/>
+    <circle cx="740" cy="76.5" r="9" fill="#ffffff" opacity="0.18"/>
+    <text x="740" y="80.5" text-anchor="middle" class="num">4</text>
+    <text x="756" y="80.5" class="hdr">下游分类器</text>
+
+    <g class="chiptx">
+      <rect class="chip" x="736" y="102" width="176" height="24" rx="5"/><text x="824" y="118" text-anchor="middle">多层感知机 MLP</text>
+      <rect class="chip" x="736" y="132" width="176" height="24" rx="5"/><text x="824" y="148" text-anchor="middle">梯度提升树 LightGBM / XGBoost</text>
+      <rect class="chip" x="736" y="162" width="176" height="24" rx="5"/><text x="824" y="178" text-anchor="middle">随机森林 RF</text>
+      <rect class="chip" x="736" y="192" width="176" height="24" rx="5"/><text x="824" y="208" text-anchor="middle">表格基础模型 TabPFN</text>
+      <rect class="chip" x="736" y="222" width="176" height="24" rx="5"/><text x="824" y="238" text-anchor="middle">逻辑回归 LR</text>
+    </g>
+    <text x="824" y="268" text-anchor="middle" class="sub">不同归纳偏置 / 模型容量</text>
+    <line x1="824" y1="278" x2="824" y2="312" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrowSm)"/>
+    <rect x="772" y="316" width="104" height="26" rx="6" fill="#334155"/>
+    <text x="824" y="333" text-anchor="middle" fill="#ffffff" font-size="11px" font-weight="600">干净测试集预测</text>
+    <text x="824" y="360" text-anchor="middle" class="sub">predict_proba(X)</text>
+  </g>
+
+  <!-- arrow 4->5 -->
+  <text x="940" y="205" text-anchor="middle" class="sub" fill="#475569">评估</text>
+  <line x1="926" y1="215" x2="954" y2="215" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===================== PANEL 5 ===================== -->
+  <g>
+    <rect class="panel" x="956" y="55" width="204" height="320" rx="9"/>
+    <path d="M956,64 a9,9 0 0 1 9,-9 h186 a9,9 0 0 1 9,9 v25 h-204 z" fill="#334155"/>
+    <circle cx="974" cy="76.5" r="9" fill="#ffffff" opacity="0.18"/>
+    <text x="974" y="80.5" text-anchor="middle" class="num">5</text>
+    <text x="990" y="80.5" class="hdr">评估与失效边界</text>
+
+    <g class="chiptx">
+      <rect class="chip" x="970" y="102" width="176" height="22" rx="5"/><text x="980" y="117">AUC-ROC ｜ AUC-PR</text>
+      <rect class="chip" x="970" y="129" width="176" height="22" rx="5"/><text x="980" y="144">效率（训练 / 推理耗时）</text>
+    </g>
+
+    <rect x="970" y="160" width="176" height="46" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1"/>
+    <text x="1058" y="178" text-anchor="middle" class="body" fill="#047857" font-weight="700">去噪挽救（MLP）</text>
+    <text x="1058" y="197" text-anchor="middle" fill="#059669" font-size="15px" font-weight="800">+2.52 pp</text>
+
+    <rect x="970" y="214" width="176" height="60" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+    <text x="1058" y="232" text-anchor="middle" class="body" fill="#b91c1c" font-weight="700">失效边界（NFL）</text>
+    <text x="1058" y="250" text-anchor="middle" class="sub" fill="#7f1d1d">TabPFN：−0.75 pp</text>
+    <text x="1058" y="265" text-anchor="middle" class="sub" fill="#7f1d1d">LR：−1.21 pp</text>
+
+    <text x="1058" y="300" text-anchor="middle" class="sub">20% 重度污染下的</text>
+    <text x="1058" y="315" text-anchor="middle" class="sub">主动防御消融评测</text>
+  </g>
+</svg>

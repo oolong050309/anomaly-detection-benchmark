@@ -4,7 +4,7 @@
 
 \begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.92\textwidth]{figures/pipline.png}
+  \includegraphics[width=\textwidth]{figures/pipeline_v2.png}
   \caption{统一跨模态抗污染异常检测评测与主动去噪防御系统的整体架构}\label{fig:system-architecture}
 \end{figure*}
 
@@ -66,6 +66,14 @@
     \State \Return $\mathcal{C}^\star$
   \end{algorithmic}
 \end{algorithm}
+
+图~\ref{fig:trim-flip}~以二维特征空间示意了两种策略的差异：剪裁直接剔除标签与特征相悖的可疑样本，使决策边界恢复洁净；而纠正在翻转标签时，一旦无监督检测器在边界附近误判，便会引入二次噪声并使边界偏斜。这从几何上解释了 Exp4 中 Trim 全面优于 Flip 的现象。
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/trim_vs_flip.png}
+  \caption{样本剪裁（Trim）与标签纠正（Flip）两种去噪策略的特征空间示意}\label{fig:trim-flip}
+\end{figure*}
 
 \subsection{典型无监督清洁器}
 本文在 Exp4 中消融了 9 种无监督清洁器 \cite{zhao2019pyod}。下面给出表现最具代表性的三种的数学机制。
