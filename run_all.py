@@ -48,6 +48,14 @@ def main() -> None:
     parser.add_argument("--modalities", nargs="+",
                         choices=["tabular", "cv", "nlp", "timeseries", "graph"],
                         default=None, help="Exp-2/Exp-3 modality filter.")
+    parser.add_argument("--analyze", action="store_true",
+                        help="After experiments, run analyze_results.py to regenerate figures.")
+    parser.add_argument("--figures-dir", default=str(ROOT / "figures"),
+                        help="Output directory used by --analyze.")
+    parser.add_argument("--metric", default="auc_roc", choices=["auc_roc", "auc_pr", "f1_best"],
+                        help="Primary metric for --analyze.")
+    parser.add_argument("--skip-significance", action="store_true",
+                        help="Skip Friedman/Nemenyi tests when running --analyze.")
     args = parser.parse_args()
 
     selected = ["exp1", "exp2", "exp3", "exp4"] if args.exp == "all" else [args.exp]
@@ -90,6 +98,22 @@ def main() -> None:
     elapsed = time.perf_counter() - t0
     print(f"\nAll requested experiments completed in {elapsed:.1f}s")
     print(f"CSV logs and score artifacts are under: {output_dir}")
+
+    if args.analyze:
+        analyze_cmd = [
+            sys.executable,
+            str(ROOT / "analyze_results.py"),
+            "--results-dir", str(output_dir),
+            "--figures-dir", str(Path(args.figures_dir)),
+            "--metric", args.metric,
+        ]
+        if args.skip_significance:
+            analyze_cmd.append("--skip-significance")
+        print(f"\n{'=' * 80}", flush=True)
+        print("Running analysis:", " ".join(analyze_cmd), flush=True)
+        print(f"{'=' * 80}", flush=True)
+        subprocess.run(analyze_cmd, cwd=str(ROOT), check=True)
+        print(f"Figures written to: {args.figures_dir}")
 
 
 if __name__ == "__main__":

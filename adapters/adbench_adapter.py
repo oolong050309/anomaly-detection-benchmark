@@ -82,15 +82,21 @@ def get_adbench_file(name: str, data_root: Optional[str | Path] = None) -> Path:
     if key not in ADBENCH_DATASETS:
         raise KeyError(f"Unknown ADBench dataset: {name}")
     spec = ADBENCH_DATASETS[key]
-    root = find_adbench_root(data_root)
+    root = get_data_root(data_root)
     candidates = [
-        root / spec["group"] / spec["file"],
-        root / spec["file"],
+        root / spec["modality"] / spec["file"],
+        root / "raw" / "ADBench" / spec["group"] / spec["file"],
+        root / "raw" / "ADBench" / spec["file"],
+        root / "ADBench" / spec["group"] / spec["file"],
+        root / "ADBench" / spec["file"],
+        root.parent / "repos" / "ADBench-main" / "adbench" / "datasets" / spec["group"] / spec["file"],
+        root.parent / "ADBench-main" / "adbench" / "datasets" / spec["file"],
     ]
     found = first_existing(candidates)
     if found is None:
         raise FileNotFoundError(
-            f"Missing ADBench file for {name}: expected {spec['group']}/{spec['file']}"
+            f"Missing ADBench file for {name}: expected {spec['modality']}/{spec['file']} "
+            f"or raw/ADBench/{spec['group']}/{spec['file']}"
         )
     return found
 

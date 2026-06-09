@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -13,6 +14,9 @@ from .adbench_adapter import ADBENCH_DATASETS, load_adbench_dataset, normalize_a
 from .common import DatasetBundle
 from .graph_adapter import GADBENCH_DATASETS, load_gadbench_dataset
 from .timeseries_adapter import load_tsb_dataset
+
+# TSB-AD 短名（exp1 用）或完整 CSV 名
+_TSB_SHORT_RE = re.compile(r"^\d{3}_.*_id_\d+")
 
 
 def infer_modality(name: str) -> str:
@@ -24,7 +28,8 @@ def infer_modality(name: str) -> str:
     graph_key = name.strip().lower().replace("_", "-")
     if graph_key in GADBENCH_DATASETS:
         return "graph"
-    if str(name).lower().endswith(".csv") or "_tr_" in str(name):
+    s = str(name)
+    if s.lower().endswith(".csv") or "_tr_" in s or _TSB_SHORT_RE.match(s):
         return "timeseries"
     raise KeyError(f"Cannot infer modality for dataset: {name}")
 

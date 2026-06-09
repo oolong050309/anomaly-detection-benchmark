@@ -24,6 +24,7 @@ def find_tsb_root(data_root: Optional[str | Path] = None) -> Path:
 
     root = get_data_root(data_root)
     candidates = [
+        root / "timeseries",
         root / "raw" / "TSB-AD-U" / "TSB-AD-U",
         root / "raw" / "TSB-AD-U",
         root / "TSB-AD-U",
